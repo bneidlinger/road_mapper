@@ -349,6 +349,19 @@
             font-family: 'Courier New', monospace;
             backdrop-filter: blur(10px);
         }
+
+        .scale-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            color: var(--accent-primary);
+            pointer-events: none;
+        }
         
         /* Modal Dialog */
         .modal {
@@ -548,9 +561,9 @@
                 </defs>
                 
                 <!-- Background -->
-                <rect width="100%" height="100%" fill="#0a0a0a"/>
-                <rect width="100%" height="100%" fill="url(#grid)"/>
-                <rect width="100%" height="100%" fill="url(#grid-major)"/>
+                <rect id="gridBackground" width="100%" height="100%" fill="#0a0a0a"/>
+                <rect id="gridMinor" width="100%" height="100%" fill="url(#grid)"/>
+                <rect id="gridMajor" width="100%" height="100%" fill="url(#grid-major)"/>
                 
                 <!-- Main viewport group -->
                 <g id="viewport">
@@ -575,14 +588,15 @@
             </div>
             
             <!-- Mini Map -->
-            <div class="minimap" id="minimap">
-                <svg width="100%" height="100%">
-                    <rect width="100%" height="100%" fill="#141414"/>
-                    <g id="minimap-content"></g>
-                    <rect class="minimap-viewport" x="40" y="30" width="120" height="90"/>
-                </svg>
+                <div class="minimap" id="minimap">
+                    <svg width="100%" height="100%">
+                        <rect width="100%" height="100%" fill="#141414"/>
+                        <g id="minimap-content"></g>
+                        <rect class="minimap-viewport" x="40" y="30" width="120" height="90"/>
+                    </svg>
+                </div>
+                <div class="scale-indicator" id="scaleIndicator"></div>
             </div>
-        </div>
 
         <!-- Properties Panel -->
         <div class="properties-panel" id="propertiesPanel">
@@ -695,6 +709,38 @@
         const cursorY = document.getElementById('cursorY');
         const zoomLevel = document.getElementById('zoomLevel');
         const propertiesPanel = document.getElementById('propertiesPanel');
+        const scaleIndicator = document.getElementById('scaleIndicator');
+
+        const elementType = document.getElementById('elementType');
+        const elementWidth = document.getElementById('elementWidth');
+        const elementLanes = document.getElementById('elementLanes');
+        const elementElevation = document.getElementById('elementElevation');
+
+        elementType.addEventListener('change', () => {
+            if (state.selectedElement && state.selectedElement.type === 'road') {
+                const road = state.elements.roads.get(state.selectedElement.id);
+                road.type = elementType.value;
+            }
+        });
+        elementWidth.addEventListener('change', () => {
+            if (state.selectedElement && state.selectedElement.type === 'road') {
+                const road = state.elements.roads.get(state.selectedElement.id);
+                road.width = parseFloat(elementWidth.value);
+                road.path.setAttribute('stroke-width', units.metersToWorld(road.width));
+            }
+        });
+        elementLanes.addEventListener('change', () => {
+            if (state.selectedElement && state.selectedElement.type === 'road') {
+                const road = state.elements.roads.get(state.selectedElement.id);
+                road.lanes = parseInt(elementLanes.value, 10);
+            }
+        });
+        elementElevation.addEventListener('change', () => {
+            if (state.selectedElement && state.selectedElement.type === 'road') {
+                const road = state.elements.roads.get(state.selectedElement.id);
+                road.elevation = parseFloat(elementElevation.value);
+            }
+        });
 
         // Initialize Application
         function init() {
@@ -709,10 +755,11 @@
             setupZoomControls();
             setupKeyboardShortcuts();
             setupUnitToggle();
-            
+
             // Initial render
             updateViewport();
             updateScaleIndicator();
+            updateGridDisplay();
         }
         
         // Setup unit toggle
@@ -724,6 +771,7 @@
                     button.classList.add('active');
                     state.units = button.dataset.unit;
                     updateCoordinateDisplay();
+                    updateScaleIndicator();
                 });
             });
         }
@@ -772,8 +820,7 @@
                 state.mouse.worldY = (state.mouse.y - state.viewport.panY) / state.viewport.zoom;
                 
                 // Update cursor coordinates display
-                cursorX.textContent = Math.round(state.mouse.worldX);
-                cursorY.textContent = Math.round(state.mouse.worldY);
+                updateCoordinateDisplay();
 
                 // Handle panning
                 if (isPanning) {
@@ -887,6 +934,7 @@
                     width: 10,
                     lanes: 2
                 });
+                currentPath.dataset.elementId = roadId;
                 currentPath = null;
             }
         }
@@ -937,6 +985,7 @@
 
         function updateZoomDisplay() {
             zoomLevel.textContent = Math.round(state.viewport.zoom * 100) + '%';
+            updateScaleIndicator();
         }
 
         function updateCursor() {
@@ -948,6 +997,75 @@
                 'query': 'help'
             };
             canvas.style.cursor = cursors[state.currentTool] || 'default';
+        }
+
+        function updateCoordinateDisplay() {
+            const xMeters = units.worldToMeters(state.mouse.worldX);
+            const yMeters = units.worldToMeters(state.mouse.worldY);
+            cursorX.textContent = units.formatDistance(xMeters);
+            cursorY.textContent = units.formatDistance(yMeters);
+        }
+
+        function updateScaleIndicator() {
+            const pixelsPerMeter = state.grid.pixelsPerMeter * state.viewport.zoom;
+            if (state.units === 'metric') {
+                scaleIndicator.textContent = `1m = ${pixelsPerMeter.toFixed(1)}px`;
+            } else {
+                const pixelsPerFoot = pixelsPerMeter / units.metersToFeet(1);
+                scaleIndicator.textContent = `1ft = ${pixelsPerFoot.toFixed(1)}px`;
+            }
+        }
+
+        function updateGridDisplay() {
+            document.getElementById('gridMinor').style.display = state.gridEnabled ? 'block' : 'none';
+            document.getElementById('gridMajor').style.display = state.gridEnabled ? 'block' : 'none';
+            document.getElementById('gridStatus').textContent = state.gridEnabled ? 'ON' : 'OFF';
+        }
+
+        function selectElement() {
+            const rect = canvas.getBoundingClientRect();
+            const target = document.elementFromPoint(rect.left + state.mouse.x, rect.top + state.mouse.y);
+            if (target && target.dataset && target.dataset.elementId) {
+                const road = state.elements.roads.get(target.dataset.elementId);
+                if (road) {
+                    deselectAll();
+                    state.selectedElement = { type: 'road', id: road.id, dom: target };
+                    target.setAttribute('stroke', '#0f0');
+                    elementType.value = road.type;
+                    elementWidth.value = road.width;
+                    elementLanes.value = road.lanes;
+                    elementElevation.value = road.elevation || 0;
+                    propertiesPanel.classList.add('active');
+                    return;
+                }
+            }
+            deselectAll();
+        }
+
+        function deselectAll() {
+            if (state.selectedElement && state.selectedElement.dom) {
+                state.selectedElement.dom.setAttribute('stroke', '#666');
+            }
+            state.selectedElement = null;
+            propertiesPanel.classList.remove('active');
+        }
+
+        function deleteSelectedElement() {
+            if (!state.selectedElement) return;
+            const { id, dom, type } = state.selectedElement;
+            if (dom) dom.remove();
+            if (type === 'road') {
+                state.elements.roads.delete(id);
+            }
+            state.selectedElement = null;
+            propertiesPanel.classList.remove('active');
+        }
+
+        function bulldozeElement() {
+            selectElement();
+            if (state.selectedElement) {
+                deleteSelectedElement();
+            }
         }
 
         // Tooltip Functions
