@@ -1,4 +1,4 @@
-# 🛣️ Road Mapper
+# Road Mapper
 
 <div align="center">
   
@@ -15,21 +15,30 @@
 
 ---
 
-## ✨ Features
+## Features
 
 Road Mapper is a powerful, browser-based application for designing transportation networks with professional-grade tools and an intuitive interface.
 
-### 🎯 Core Capabilities
+### Core Capabilities
 
-- **🖊️ Smart Road Drawing** - Multi-point path creation with automatic curve smoothing
-- **🔀 Auto-Intersection Detection** - Intelligently creates intersections where roads meet
-- **📐 Grid & Snap System** - Precision placement with configurable grid sizes
-- **🛠️ Professional Tools** - Select, draw, delete, and pan with keyboard shortcuts
-- **💾 Project Management** - Save and load your designs in portable .roadmap format
-- **🎨 Dark Theme UI** - Easy on the eyes for extended design sessions
-- **⚡ Zero Dependencies** - Pure vanilla JavaScript for maximum performance
+- **Smart Road Drawing** - Multi-point path creation with automatic curve smoothing
+- **Auto-Intersection Detection** - Intelligently creates intersections where roads meet
+- **Procedural Building Generation** - Generate realistic city blocks with the building tool
+- **Grid & Snap System** - Precision placement with configurable grid sizes
+- **Professional Tools** - Select, draw, delete, building, and pan tools with keyboard shortcuts
+- **Bird's Eye View Mode** - Special visualization mode for city-scale planning
+- **Project Management** - Save and load your designs in portable .roadmap format
+- **SVG-Based Rendering** - Infinite zoom without pixelation
+- **Dark Theme UI** - Easy on the eyes for extended design sessions
 
-### 🚀 Coming Soon
+### Advanced Features
+
+- **Level-of-Detail System** - Automatic detail adjustment based on zoom level
+- **Visibility Culling** - Optimized rendering of large maps
+- **SVG Effects** - Glow effects, patterns, and animations
+- **Event-Driven Architecture** - Extensible and modular codebase
+
+### Coming Soon
 
 - [ ] SVG/PNG export functionality
 - [ ] Undo/redo system
@@ -38,7 +47,7 @@ Road Mapper is a powerful, browser-based application for designing transportatio
 - [ ] Collaborative editing
 - [ ] Mobile touch support
 
-## 🏁 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -59,7 +68,7 @@ npm install
 npm run dev
 ```
 
-The application will open at `http://localhost:3000`
+The application will open at `http://localhost:8080`
 
 ### Building for Production
 
@@ -71,7 +80,7 @@ npm run build
 npm run preview
 ```
 
-## 🎮 Usage
+## Usage
 
 ### Keyboard Shortcuts
 
@@ -81,12 +90,17 @@ npm run preview
 | `R` | Road drawing tool |
 | `I` | Intersection tool |
 | `D` | Delete tool |
+| `B` | Building tool |
+| `U` | Toggle building tool (UI button) |
+| `G` | Generate buildings in all city blocks |
+| `C` | Clear all buildings |
 | `Space` | Pan tool |
-| `Left Click + Drag` | Pan view (in any tool) |
+| `Left Click + Drag` | Pan view (when not drawing) |
 | `Right Click + Drag` | Pan view |
 | `Ctrl/Cmd + N` | New project |
 | `Ctrl/Cmd + S` | Save project |
 | `Ctrl/Cmd + O` | Open project |
+| `B` (hold) | Bird's eye view mode |
 
 ### Drawing Roads
 
@@ -96,7 +110,17 @@ npm run preview
 4. Double-click to finish the road
 5. Roads automatically connect when they intersect!
 
-## 🏗️ Architecture
+### Creating Buildings
+
+1. Select the Building tool (`B` key or `U` button)
+2. Click and drag to define a rectangular area
+3. Release to generate buildings in that area
+   - Small areas create single buildings
+   - Large areas generate multiple buildings procedurally
+4. Use `G` to auto-generate buildings in all detected city blocks
+5. Use `C` to clear all buildings
+
+## Architecture
 
 Road Mapper follows a modular, event-driven architecture for maintainability and extensibility.
 
@@ -104,10 +128,15 @@ Road Mapper follows a modular, event-driven architecture for maintainability and
 src/
 ├── core/           # Core utilities (EventEmitter, Store, Constants)
 ├── modules/        # Main application logic
+│   ├── svg/        # SVG rendering pipeline
+│   │   ├── SVGRenderer.js      # Main rendering orchestrator
+│   │   ├── SVGManager.js       # SVG element management
+│   │   └── rendering/          # Visibility and LOD management
 │   ├── viewport/   # Camera and coordinate system
 │   ├── grid/       # Grid rendering and snapping
-│   ├── elements/   # Road and Intersection classes
-│   └── tools/      # Tool implementations
+│   ├── elements/   # Road, Intersection, and Building classes
+│   ├── tools/      # Tool implementations
+│   └── effects/    # Visual effects and patterns
 ├── components/     # UI components
 └── styles/         # CSS styling
 ```
@@ -118,8 +147,11 @@ src/
 - **Tool System** - Extensible tool framework with base class
 - **World/Screen Coordinates** - Clean separation of coordinate spaces
 - **Single Responsibility** - Each module handles one concern
+- **SVG-Based Rendering** - Scalable vector graphics for infinite zoom
+- **Level-of-Detail (LOD)** - Adaptive rendering based on zoom level
+- **Visibility Management** - Efficient culling of off-screen elements
 
-## 📖 Documentation
+## Documentation
 
 ### Creating Custom Tools
 
@@ -151,17 +183,24 @@ export class Bridge {
     this.end = endPoint;
   }
   
-  draw(ctx, viewport) {
-    // Custom drawing logic
+  draw() {
+    // Return SVG element(s)
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    // Add SVG elements to group
+    return group;
   }
   
-  hitTest(x, y) {
-    // Collision detection
+  hitTest(worldPos) {
+    // Collision detection in world coordinates
+  }
+  
+  updateDetailLevel(zoom) {
+    // Adjust rendering based on zoom level
   }
 }
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -171,31 +210,32 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📊 Performance
+## Performance
 
 Road Mapper is optimized for handling large transportation networks:
 
-- Canvas-based rendering for smooth performance
-- Efficient spatial indexing for element selection
-- Minimal redraws using dirty rectangle tracking
-- Lightweight with zero runtime dependencies
+- SVG-based rendering with hardware acceleration
+- Visibility culling removes off-screen elements
+- Level-of-detail system reduces complexity at low zoom
+- Event batching prevents excessive updates
+- Efficient element reuse and caching
 
-## 🛡️ Security
+## Security
 
 - No external dependencies reduces attack surface
 - Client-side only - your designs never leave your device
 - Content Security Policy ready
 - Regular security audits
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by SimCity's road tools
 - Built with modern web standards
-- Developed with ❤️ for urban planners and game developers
+- Developed for urban planners and game developers
 
 ---
 
@@ -203,6 +243,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   
   **[Report Bug](https://github.com/yourusername/road-mapper/issues) • [Request Feature](https://github.com/yourusername/road-mapper/issues)**
   
-  Made with ☕ and 🎵
+  Built with modern web technologies
   
 </div>
