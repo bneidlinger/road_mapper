@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Road Mapper</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+            display: flex;
+            height: 100vh;
+        }
+        
+        #app-frame {
+            flex: 1;
+            border: none;
+        }
+        
+        #debug-panel {
+            width: 400px;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #debug-panel h3 {
+            margin-top: 0;
+            color: #00ff88;
+        }
+        
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #222;
+            border-radius: 4px;
+        }
+        
+        .debug-value {
+            color: #00ff88;
+            font-family: monospace;
+        }
+        
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            padding: 4px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry.error {
+            background: #4a2020;
+            color: #ff6666;
+        }
+        
+        .log-entry.warn {
+            background: #4a4020;
+            color: #ffaa66;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="app-frame" src="index.html"></iframe>
+    
+    <div id="debug-panel">
+        <h3>Debug Panel</h3>
+        
+        <div class="debug-section">
+            <h4>Viewport State</h4>
+            <div>Zoom: <span class="debug-value" id="zoom-value">-</span></div>
+            <div>Position: <span class="debug-value" id="position-value">-</span></div>
+            <div>Mode: <span class="debug-value" id="mode-value">-</span></div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>Quick Actions</h4>
+            <button onclick="addTestData()">Add Test Roads</button>
+            <button onclick="setZoom(0.1)">Bird's Eye (0.1x)</button>
+            <button onclick="setZoom(0.15)">Bird's Eye (0.15x)</button>
+            <button onclick="setZoom(0.2)">Threshold (0.2x)</button>
+            <button onclick="setZoom(1)">Normal (1x)</button>
+            <button onclick="clearAll()">Clear All</button>
+        </div>
+        
+        <div class="debug-section">
+            <h4>Console Log</h4>
+            <div id="console-log" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>Element Count</h4>
+            <div>Roads: <span class="debug-value" id="road-count">0</span></div>
+            <div>Intersections: <span class="debug-value" id="intersection-count">0</span></div>
+        </div>
+    </div>
+    
+    <script>
+        let appWindow = null;
+        let app = null;
+        const logContainer = document.getElementById('console-log');
+        
+        // Intercept console logs from iframe
+        function setupConsoleIntercept() {
+            if (!appWindow) return;
+            
+            const originalLog = appWindow.console.log;
+            const originalError = appWindow.console.error;
+            const originalWarn = appWindow.console.warn;
+            
+            appWindow.console.log = function(...args) {
+                originalLog.apply(appWindow.console, args);
+                addLogEntry('log', args);
+            };
+            
+            appWindow.console.error = function(...args) {
+                originalError.apply(appWindow.console, args);
+                addLogEntry('error', args);
+            };
+            
+            appWindow.console.warn = function(...args) {
+                originalWarn.apply(appWindow.console, args);
+                addLogEntry('warn', args);
+            };
+        }
+        
+        function addLogEntry(type, args) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Wait for iframe to load
+        document.getElementById('app-frame').onload = function() {
+            appWindow = this.contentWindow;
+            setupConsoleIntercept();
+            
+            // Try to access the app after a delay
+            setTimeout(() => {
+                tryAccessApp();
+            }, 1000);
+        };
+        
+        function tryAccessApp() {
+            if (appWindow && appWindow.app) {
+                app = appWindow.app;
+                console.log('App accessed successfully');
+                startMonitoring();
+            } else {
+                console.log('App not ready, retrying...');
+                setTimeout(tryAccessApp, 500);
+            }
+        }
+        
+        function startMonitoring() {
+            setInterval(() => {
+                if (!app || !app.svgRenderer) return;
+                
+                const viewport = app.svgRenderer.viewport;
+                const zoom = viewport.zoom;
+                
+                document.getElementById('zoom-value').textContent = zoom.toFixed(3);
+                document.getElementById('position-value').textContent = `${viewport.x.toFixed(1)}, ${viewport.y.toFixed(1)}`;
+                document.getElementById('mode-value').textContent = zoom < 0.2 ? 'Bird\'s Eye' : 'Normal';
+                
+                document.getElementById('road-count').textContent = app.elementManager.getRoads().length;
+                document.getElementById('intersection-count').textContent = app.elementManager.getIntersections().length;
+            }, 100);
+        }
+        
+        function setZoom(zoom) {
+            if (!app || !app.svgRenderer) {
+                console.error('App not ready');
+                return;
+            }
+            
+            console.log(`Setting zoom to ${zoom}`);
+            app.svgRenderer.viewport.setZoom(zoom);
+            
+            // Force visibility update
+            setTimeout(() => {
+                app.svgRenderer.updateVisibility();
+                console.log('Visibility updated');
+            }, 50);
+        }
+        
+        function addTestData() {
+            if (!app || !app.elementManager) {
+                console.error('App not ready');
+                return;
+            }
+            
+            // Load and execute the test data script
+            const script = appWindow.document.createElement('script');
+            script.src = 'add-test-data.js';
+            script.onload = () => {
+                appWindow.addTestRoads();
+            };
+            appWindow.document.body.appendChild(script);
+        }
+        
+        function clearAll() {
+            if (!app || !app.elementManager) {
+                console.error('App not ready');
+                return;
+            }
+            
+            app.elementManager.clear();
+            console.log('All elements cleared');
+        }
+    </script>
+</body>
+</html>

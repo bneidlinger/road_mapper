@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Generation Simple Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        #app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .controls {
+            background: #2a2a2a;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        button {
+            background: #3a3a3a;
+            color: #e0e0e0;
+            border: 1px solid #4a4a4a;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #4a4a4a;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: #0a0a0a;
+        }
+        
+        #log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="controls">
+            <button onclick="testDirectBuilding()">Test Direct Building</button>
+            <button onclick="testBuildingInArea()">Test Building in Area</button>
+            <button onclick="addRoadsAndGenerate()">Add Roads + Generate</button>
+            <button onclick="clearAll()">Clear All</button>
+        </div>
+        <div id="canvas-container"></div>
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        import { RoadMapperApp } from './src/RoadMapperApp.js';
+        import { BuildingGenerator } from './src/modules/BuildingGenerator.js';
+        import { Building } from './src/modules/elements/Building.js';
+        
+        const app = new RoadMapperApp('canvas-container');
+        const buildingGenerator = new BuildingGenerator(app.elementManager);
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += message + '<br>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        window.testDirectBuilding = function() {
+            log('Testing direct building creation...');
+            
+            // Create a building directly
+            const building = new Building(
+                'test_building_' + Date.now(),
+                200, // x
+                200, // y
+                80,  // width
+                60,  // height
+                'commercial'
+            );
+            
+            app.elementManager.addBuilding(building);
+            log('Added building at (200, 200)');
+            
+            // Center view on building
+            app.renderer.viewport.centerOn(200, 200);
+            app.renderer.viewport.setZoom(1.5);
+        };
+        
+        window.testBuildingInArea = function() {
+            log('Testing building generation in specific area...');
+            
+            // Generate buildings in a specific area (no roads)
+            const count = buildingGenerator.generateBuildingsInArea(100, 100, 300, 300);
+            log(`Generated ${count} buildings in area (100,100) to (400,400)`);
+            
+            // Center view
+            app.renderer.viewport.centerOn(250, 250);
+            app.renderer.viewport.setZoom(1.0);
+        };
+        
+        window.addRoadsAndGenerate = function() {
+            log('Adding roads and generating buildings...');
+            
+            // Clear first
+            app.elementManager.clear();
+            
+            // Import Road class
+            import('./src/modules/elements/Road.js').then(module => {
+                const Road = module.Road;
+                
+                // Create a simple square of roads
+                const roads = [
+                    { id: 'road1', points: [{x: 100, y: 100}, {x: 400, y: 100}] },
+                    { id: 'road2', points: [{x: 400, y: 100}, {x: 400, y: 400}] },
+                    { id: 'road3', points: [{x: 400, y: 400}, {x: 100, y: 400}] },
+                    { id: 'road4', points: [{x: 100, y: 400}, {x: 100, y: 100}] }
+                ];
+                
+                roads.forEach(r => {
+                    const road = new Road(r.id, 'street');
+                    road.points = r.points;
+                    app.elementManager.addRoad(road);
+                    log(`Added road: ${r.id}`);
+                });
+                
+                // Create intersections
+                app.elementManager.createIntersectionAt(100, 100);
+                app.elementManager.createIntersectionAt(400, 100);
+                app.elementManager.createIntersectionAt(400, 400);
+                app.elementManager.createIntersectionAt(100, 400);
+                log('Added 4 intersections');
+                
+                // Try to generate buildings
+                setTimeout(() => {
+                    const count = buildingGenerator.generateBuildings();
+                    log(`Generated ${count} buildings`);
+                    
+                    // Also try the specific area inside the square
+                    const count2 = buildingGenerator.generateBuildingsInArea(150, 150, 200, 200);
+                    log(`Generated ${count2} additional buildings in center area`);
+                    
+                    // Center view
+                    app.renderer.viewport.centerOn(250, 250);
+                    app.renderer.viewport.setZoom(1.0);
+                }, 100);
+            });
+        };
+        
+        window.clearAll = function() {
+            app.elementManager.clear();
+            log('Cleared all elements');
+        };
+        
+        // Initial message
+        log('Building test ready. Click buttons to test.');
+    </script>
+</body>
+</html>

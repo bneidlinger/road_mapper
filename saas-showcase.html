@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Mapper - SaaS Quality Showcase</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f14;
+            color: #e8e8ec;
+            overflow-x: hidden;
+        }
+        
+        .showcase-header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #1a1a23 0%, #0f0f14 100%);
+            border-bottom: 1px solid #2a2a3a;
+        }
+        
+        .showcase-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #00d4ff, #00a8cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .showcase-header p {
+            font-size: 1.25rem;
+            color: #a0a0b8;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .feature-card {
+            background: #1a1a23;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: #00d4ff;
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #00d4ff, #00a8cc);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+        
+        .feature-card p {
+            color: #a0a0b8;
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(to bottom, #0f0f14, #1a1a23);
+        }
+        
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #00d4ff, #00a8cc);
+            color: #0f0f14;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.4);
+        }
+        
+        .demo-frame {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 40px 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-header">
+        <h1>Road Mapper</h1>
+        <p>Professional Transportation Network Designer with Advanced Road Drawing and Intersection Management</p>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M5 17L5 7C5 6.44772 5.44772 6 6 6L18 6C18.5523 6 19 6.44772 19 7L19 17C19 17.5523 18.5523 18 18 18L6 18C5.44772 18 5 17.5523 5 17Z"/>
+                        <path d="M12 9L12 15" stroke-dasharray="3 3"/>
+                    </svg>
+                </div>
+                <h3>Advanced Road Drawing</h3>
+                <p>Create multi-point roads with automatic intersection detection and professional styling</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <circle cx="12" cy="12" r="6"/>
+                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                    </svg>
+                </div>
+                <h3>Smart Intersections</h3>
+                <p>Automatic intersection management with traffic flow optimization and signal planning</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                    </svg>
+                </div>
+                <h3>Precision Grid System</h3>
+                <p>Snap-to-grid functionality with configurable grid sizes for accurate road placement</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                </div>
+                <h3>Dynamic Zoom Levels</h3>
+                <p>From bird's eye network view to detailed close-up with adaptive rendering</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                    </svg>
+                </div>
+                <h3>Project Management</h3>
+                <p>Save and load projects in .roadmap format with full state preservation</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                </div>
+                <h3>SVG Export</h3>
+                <p>Export your designs as scalable vector graphics for presentations and documentation</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cta-section">
+        <h2 style="font-size: 2rem; margin-bottom: 20px;">Experience Road Mapper</h2>
+        <p style="color: #a0a0b8; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
+            Try the full application below or launch it in a new window for the best experience.
+        </p>
+        <a href="/" class="cta-button" target="_blank">
+            Launch Road Mapper
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 17L17 7M17 7H7M17 7V17"/>
+            </svg>
+        </a>
+        
+        <iframe src="/" class="demo-frame"></iframe>
+    </div>
+</body>
+</html>

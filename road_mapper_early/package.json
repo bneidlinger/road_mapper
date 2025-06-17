@@ -1,0 +1,10 @@
+{
+  "name": "road-mapper",
+  "version": "0.1.0",
+  "description": "Base application for road and transportation mapping",
+  "type": "module",
+  "scripts": {
+    "start": "echo 'Open public/index.html in a browser'",
+    "test": "echo 'No tests yet'"
+  }
+}

@@ -1,0 +1,91 @@
+Outline for a Dedicated Road & Transportation Drawing Application
+Project Structure
+
+Mirror the modular layout already used in this repo:
+
+road-mapper/
+├── src/
+│   ├── modules/
+│   │   ├── canvas/      # Rendering and interaction
+│   │   ├── elements/    # Road, intersection, interchange definitions
+│   │   ├── export/      # PNG/SVG/JSON export
+│   │   ├── settings/    # User preferences (units, grid)
+│   │   └── ui/          # Toolbars, property panels
+│   ├── styles/
+│   └── app.js
+└── public/
+(modeled after README architecture)
+
+Core Modules
+
+Canvas: Reuse and simplify canvas/renderer.js and canvas/interaction.js for zoom/pan, drawing, and selection.
+
+State Management: Adapt state.js for road-specific tools (current tool, junction preview, snapping).
+
+Elements:
+
+Road Path: Based on path.js, keep properties for segments, width, variant, and junction list.
+
+Intersection Object: New element representing complex intersections (T‑junction, cross, multi‑way). Automatically generated when two roads connect using logic from createPathJunction.
+
+Interchange Object: Specialized element that creates predefined patterns (cloverleaf, diamond). Each interchange stores sub-road segments generated automatically.
+
+Sidewalk/Pathway: Variant of a road path, possibly derived from the “walkway” style in renderCrossJunction.
+
+Auto-Generation Utilities
+
+Path‑to‑junction detection using the logic inside renderPathElement that checks path.junctions and renders them before or after roads
+
+Interchange generation algorithms using parameterized templates; place starting/ending nodes and auto-populate ramps.
+
+User Interaction Workflow
+
+Road Drawing Tool
+
+Start at a point; drag to define segments (similar to existing path drawing).
+
+Snap to grid if enabled (reuse grid handling from canvas/grid.js).
+
+When the pointer nears an existing road, call createPathJunction to insert an intersection automatically.
+
+Intersection/Interchange Templates
+
+Toolbar options to pick intersection or interchange types.
+
+Click once to place a complete template that generates multiple road segments and connection objects.
+
+Sidewalk/Pathway
+
+Toggle to draw sidewalk lines; can auto-generate alongside a road segment with an offset.
+
+Editing and Properties
+
+Property panel for each element (road width, number of lanes, surface type).
+
+Intersection panel to tweak traffic controls (stop sign, traffic light).
+
+Export
+
+Reuse the existing export module for PNG/SVG/JSON output.
+
+Data Model
+
+Extend the path structure with metadata for road type (freeway, street, service), lane count, and optional sidewalk references.
+
+Junction objects store references to connected road IDs and include intersection type (T, cross, interchange).
+
+Interchange elements hold an array of generated road segments plus metadata about ramps and connecting points.
+
+Automatic Object Creation
+
+Intersections: When a new road segment crosses or ends on an existing road, call createPathJunction to add junction data. Render with renderPathJunctions, using variant-specific logic for stop lines and intersection pavement.
+
+Freeway Interchanges: Provide functions to generate sets of segments based on interchange type. Each ramp can be built as a path with designated curvature and merging points.
+
+Sidewalks: Optionally create parallel walkway paths at a defined offset whenever a road is created.
+
+Testing and Samples
+
+Adapt the existing HTML demos like test-road-intersections.html to create example scenarios for T-junctions and 4‑way intersections, ensuring auto-generation works.
+
+This outline reuses the proven architecture from Facility Map Creator while customizing modules and element types to specialize in road and transportation design. The key is leveraging the existing path rendering and junction creation mechanisms, then expanding them with dedicated intersection and interchange generators for rapid road network drawing.

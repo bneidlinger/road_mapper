@@ -1,0 +1,329 @@
+import { BaseTool } from './BaseTool.js';
+import { Road } from '../elements/Road.js';
+import { IntersectionDetector } from '../intersection/IntersectionDetector.js';
+import { TIntersectionRenderer } from '../intersection/TIntersectionRenderer.js';
+import { RoadPreviewRenderer } from './helpers/RoadPreviewRenderer.js';
+import { RoadDrawingManager } from './helpers/RoadDrawingManager.js';
+
+export class RoadTool extends BaseTool {
+  constructor(toolManager) {
+    super(toolManager);
+    
+    // Initialize helpers
+    this.intersectionDetector = new IntersectionDetector(this.elementManager);
+    this.tIntersectionRenderer = new TIntersectionRenderer();
+    this.previewRenderer = new RoadPreviewRenderer();
+    this.drawingManager = new RoadDrawingManager(
+      this.elementManager,
+      this.intersectionDetector,
+      this.grid
+    );
+    
+    // Legacy properties for compatibility
+    this.isDrawing = false;
+    this.currentRoad = null;
+    this.previewPoint = null;
+    this.potentialIntersection = null;
+    this.roadType = 'STREET';
+    
+    console.log('RoadTool initialized with elementManager:', this.elementManager);
+    console.log('IntersectionDetector initialized:', this.intersectionDetector);
+  }
+
+  activate() {
+    super.activate();
+    this.toolManager.canvas.style.cursor = 'crosshair';
+  }
+
+  deactivate() {
+    super.deactivate();
+    this.finishRoad();
+    this.toolManager.canvas.style.cursor = 'default';
+  }
+
+  cancelAction() {
+    // Cancel current road drawing
+    if (this.drawingManager.isDrawing) {
+      this.drawingManager.cancelRoad();
+      this.syncLegacyProperties();
+      this.toolManager.emit('redraw');
+    }
+  }
+
+  isUsingMouse() {
+    // Road tool is actively using mouse when drawing
+    return this.drawingManager.isDrawing;
+  }
+
+  onMouseDown(event, worldPos) {
+    console.log('RoadTool.onMouseDown', worldPos);
+    
+    const snappedPos = this.grid.snap(worldPos.x, worldPos.y);
+    console.log('Snapped position:', snappedPos);
+    
+    if (!this.isDrawing) {
+      this.startRoad(snappedPos.x, snappedPos.y);
+    } else {
+      this.addPoint(snappedPos.x, snappedPos.y);
+    }
+  }
+
+  onMouseMove(event, worldPos) {
+    if (this.isDrawing) {
+      this.previewPoint = this.grid.snap(worldPos.x, worldPos.y);
+      
+      // Debug: Check available roads
+      const availableRoads = this.elementManager.getRoads();
+      if (availableRoads.length > 0 && !this._loggedRoads) {
+        console.log('Available roads for intersection detection:', availableRoads.length);
+        this._loggedRoads = true;
+      }
+      
+      // Check for potential T-intersection
+      // For segment drawing, we need to pass the start point of the current segment
+      const approachFrom = this.currentRoad && this.currentRoad.points.length > 0 
+        ? this.currentRoad.points[this.currentRoad.points.length - 1]
+        : null;
+        
+      this.potentialIntersection = this.intersectionDetector.detectTIntersection(
+        this.previewPoint.x,
+        this.previewPoint.y,
+        this.currentRoad ? this.currentRoad.id : null,
+        approachFrom
+      );
+      
+      if (this.potentialIntersection) {
+        console.log('Potential T-intersection detected at:', this.potentialIntersection.point);
+      }
+      
+      this.toolManager.emit('redraw');
+    } else {
+      this._loggedRoads = false; // Reset flag when not drawing
+    }
+  }
+
+  onMouseUp(event, worldPos) {
+    if (event.detail === 2) { // Double click to finish
+      this.finishRoad();
+    }
+  }
+
+  startRoad(x, y) {
+    const roadId = `road_${Date.now()}`;
+    this.currentRoad = new Road(roadId, [], this.roadType);
+    this.currentRoad.addPoint(x, y);
+    this.isDrawing = true;
+  }
+  
+  setRoadType(type) {
+    this.roadType = type;
+  }
+
+  addPoint(x, y) {
+    if (this.currentRoad) {
+      const lastPoint = this.currentRoad.getLastPoint();
+      if (lastPoint.x !== x || lastPoint.y !== y) {
+        // Check if we're creating a T-intersection
+        const intersection = this.intersectionDetector.detectTIntersection(
+          x, y, this.currentRoad.id
+        );
+        
+        if (intersection) {
+          // Snap to the intersection point
+          this.currentRoad.addPoint(intersection.point.x, intersection.point.y);
+          
+          // First add the road to the element manager
+          this.elementManager.addRoad(this.currentRoad);
+          
+          // Create the intersection with the current road ID
+          this.elementManager.createIntersectionAt(
+            intersection.point.x,
+            intersection.point.y,
+            [this.currentRoad.id, intersection.road.id]
+          );
+          
+          // Mark as not drawing anymore
+          this.currentRoad = null;
+          this.isDrawing = false;
+          this.previewPoint = null;
+          this.toolManager.emit('redraw');
+        } else {
+          this.currentRoad.addPoint(x, y);
+        }
+      }
+    }
+  }
+
+  finishRoad() {
+    if (this.currentRoad && this.currentRoad.points.length > 1) {
+      this.elementManager.addRoad(this.currentRoad);
+      this.checkForIntersections(this.currentRoad);
+    }
+    
+    this.currentRoad = null;
+    this.isDrawing = false;
+    this.previewPoint = null;
+    this.toolManager.emit('redraw');
+  }
+
+  checkForIntersections(newRoad) {
+    const roads = this.elementManager.getRoads();
+    
+    for (const road of roads) {
+      if (road.id === newRoad.id) continue;
+      
+      // Check for line-line intersections
+      const intersections = this.findIntersections(newRoad, road);
+      for (const point of intersections) {
+        this.elementManager.createIntersectionAt(point.x, point.y, [newRoad.id, road.id]);
+      }
+      
+      // Check for T-intersections at road endpoints
+      const firstPoint = newRoad.points[0];
+      const lastPoint = newRoad.points[newRoad.points.length - 1];
+      
+      // Check if first point creates a T-intersection
+      const firstIntersection = this.intersectionDetector.detectTIntersection(
+        firstPoint.x, firstPoint.y, newRoad.id
+      );
+      if (firstIntersection && firstIntersection.road.id === road.id) {
+        this.elementManager.createIntersectionAt(
+          firstIntersection.point.x,
+          firstIntersection.point.y,
+          [newRoad.id, road.id]
+        );
+      }
+      
+      // Check if last point creates a T-intersection
+      const lastIntersection = this.intersectionDetector.detectTIntersection(
+        lastPoint.x, lastPoint.y, newRoad.id
+      );
+      if (lastIntersection && lastIntersection.road.id === road.id) {
+        this.elementManager.createIntersectionAt(
+          lastIntersection.point.x,
+          lastIntersection.point.y,
+          [newRoad.id, road.id]
+        );
+      }
+    }
+  }
+
+  findIntersections(road1, road2) {
+    const intersections = [];
+    
+    for (let i = 0; i < road1.points.length - 1; i++) {
+      for (let j = 0; j < road2.points.length - 1; j++) {
+        const intersection = this.lineIntersection(
+          road1.points[i], road1.points[i + 1],
+          road2.points[j], road2.points[j + 1]
+        );
+        
+        if (intersection) {
+          intersections.push(intersection);
+        }
+      }
+    }
+    
+    return intersections;
+  }
+
+  lineIntersection(p1, p2, p3, p4) {
+    const x1 = p1.x, y1 = p1.y;
+    const x2 = p2.x, y2 = p2.y;
+    const x3 = p3.x, y3 = p3.y;
+    const x4 = p4.x, y4 = p4.y;
+    
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(denom) < 0.0001) return null;
+    
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+    
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+      return {
+        x: x1 + t * (x2 - x1),
+        y: y1 + t * (y2 - y1)
+      };
+    }
+    
+    return null;
+  }
+
+  draw(ctx) {
+    if (this.currentRoad && this.isDrawing) {
+      this.currentRoad.draw(ctx, this.viewport);
+      
+      if (this.previewPoint) {
+        const lastPoint = this.currentRoad.getLastPoint();
+        const screenLast = this.viewport.worldToScreen(lastPoint.x, lastPoint.y);
+        const screenPreview = this.viewport.worldToScreen(this.previewPoint.x, this.previewPoint.y);
+        
+        ctx.save();
+        ctx.strokeStyle = 'rgba(102, 102, 102, 0.5)';
+        ctx.lineWidth = this.currentRoad.properties.width;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(screenLast.x, screenLast.y);
+        ctx.lineTo(screenPreview.x, screenPreview.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  renderSVG(svgManager, viewport) {
+    if (this.currentRoad && this.isDrawing) {
+      const overlayLayer = svgManager.layers.overlay;
+      
+      // Create a temporary path for the road being drawn
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      let d = '';
+      
+      // Build path data
+      this.currentRoad.points.forEach((point, index) => {
+        if (index === 0) {
+          d += `M ${point.x} ${point.y}`;
+        } else {
+          d += ` L ${point.x} ${point.y}`;
+        }
+      });
+      
+      // Add preview point if exists
+      if (this.previewPoint) {
+        // If we have a potential intersection, snap to that point
+        const targetPoint = this.potentialIntersection 
+          ? this.potentialIntersection.point 
+          : this.previewPoint;
+        d += ` L ${targetPoint.x} ${targetPoint.y}`;
+      }
+      
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', 'rgba(102, 102, 102, 0.8)');
+      path.setAttribute('stroke-width', this.currentRoad.properties.width);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-dasharray', '5 5');
+      path.setAttribute('class', 'road-preview');
+      
+      overlayLayer.appendChild(path);
+      
+      // Draw intersection preview if detected
+      if (this.potentialIntersection) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'intersection-preview');
+        g.setAttribute('opacity', '0.6');
+        
+        // Draw a circle to indicate intersection point
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', this.potentialIntersection.point.x);
+        circle.setAttribute('cy', this.potentialIntersection.point.y);
+        circle.setAttribute('r', '20');
+        circle.setAttribute('fill', '#4CAF50');
+        circle.setAttribute('stroke', '#2E7D32');
+        circle.setAttribute('stroke-width', '2');
+        
+        g.appendChild(circle);
+        overlayLayer.appendChild(g);
+      }
+    }
+  }
+}

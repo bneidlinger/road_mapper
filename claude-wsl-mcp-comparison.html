@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code: WSL vs MCP Architecture</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .architecture-diagram {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .architecture-box {
+            flex: 1;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .component {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .flow-arrow {
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+            font-size: 24px;
+        }
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .tech-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .tech-card h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .pros, .cons {
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .pros {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .cons {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        .mermaid-diagram {
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0 4px;
+        }
+        .badge-native {
+            background: #28a745;
+            color: white;
+        }
+        .badge-protocol {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Claude Code Architecture: WSL vs MCP</h1>
+        <p>Technical comparison of Windows Subsystem for Linux (WSL) and Model Context Protocol (MCP) integration with Claude Code</p>
+    </div>
+
+    <div class="container">
+        <h2>Architecture Overview</h2>
+        <div class="architecture-diagram">
+            <div class="architecture-box">
+                <h3>WSL Integration <span class="badge badge-native">Native</span></h3>
+                <div class="component">
+                    <strong>Claude Code CLI</strong>
+                    <p>Running in WSL environment</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>Direct File System Access</strong>
+                    <p>Native Linux filesystem + Windows mount</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>Built-in Tools</strong>
+                    <ul>
+                        <li>Bash commands</li>
+                        <li>File operations (Read/Write/Edit)</li>
+                        <li>Git integration</li>
+                        <li>Process execution</li>
+                    </ul>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>Your Project</strong>
+                    <p>/mnt/c/projects/road_mapper</p>
+                </div>
+            </div>
+
+            <div class="architecture-box">
+                <h3>MCP Integration <span class="badge badge-protocol">Protocol</span></h3>
+                <div class="component">
+                    <strong>Claude Code CLI</strong>
+                    <p>Any environment</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>MCP Client</strong>
+                    <p>JSON-RPC communication layer</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>MCP Servers</strong>
+                    <ul>
+                        <li>Database connectors</li>
+                        <li>API integrations</li>
+                        <li>Custom tools</li>
+                        <li>Remote services</li>
+                    </ul>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="component">
+                    <strong>External Resources</strong>
+                    <p>Databases, APIs, Cloud Services</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Technical Specifications</h2>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>WSL Setup</th>
+                    <th>MCP Setup</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Protocol</strong></td>
+                    <td>Direct system calls</td>
+                    <td>JSON-RPC 2.0 over stdio</td>
+                </tr>
+                <tr>
+                    <td><strong>Communication</strong></td>
+                    <td>Native process execution</td>
+                    <td>Structured message passing</td>
+                </tr>
+                <tr>
+                    <td><strong>File Access</strong></td>
+                    <td>Full filesystem (Linux + Windows mounts)</td>
+                    <td>Depends on server implementation</td>
+                </tr>
+                <tr>
+                    <td><strong>Performance</strong></td>
+                    <td>Native speed, minimal overhead</td>
+                    <td>JSON serialization overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>Security Model</strong></td>
+                    <td>WSL user permissions</td>
+                    <td>Server-defined permissions</td>
+                </tr>
+                <tr>
+                    <td><strong>Configuration</strong></td>
+                    <td>None required</td>
+                    <td>~/.config/claude/mcp_settings.json</td>
+                </tr>
+                <tr>
+                    <td><strong>Extensibility</strong></td>
+                    <td>Limited to built-in tools</td>
+                    <td>Unlimited via custom servers</td>
+                </tr>
+                <tr>
+                    <td><strong>Resource Access</strong></td>
+                    <td>Local system only</td>
+                    <td>Any resource the server can reach</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h2>Available Tools Comparison</h2>
+        <div class="tech-grid">
+            <div class="tech-card">
+                <h3>WSL Built-in Tools</h3>
+                <ul class="feature-list">
+                    <li><code>Bash</code> - Execute shell commands</li>
+                    <li><code>Read</code> - Read file contents</li>
+                    <li><code>Write</code> - Create/overwrite files</li>
+                    <li><code>Edit</code> - Modify file contents</li>
+                    <li><code>MultiEdit</code> - Batch file edits</li>
+                    <li><code>Glob</code> - Find files by pattern</li>
+                    <li><code>Grep</code> - Search file contents</li>
+                    <li><code>LS</code> - List directory contents</li>
+                    <li><code>WebFetch</code> - Fetch web content</li>
+                    <li><code>WebSearch</code> - Search the web</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h3>MCP Server Examples</h3>
+                <ul class="feature-list">
+                    <li><code>postgres</code> - PostgreSQL queries</li>
+                    <li><code>github</code> - GitHub API access</li>
+                    <li><code>slack</code> - Slack integration</li>
+                    <li><code>puppeteer</code> - Browser automation</li>
+                    <li><code>filesystem</code> - Enhanced file ops</li>
+                    <li><code>sqlite</code> - SQLite database</li>
+                    <li><code>git</code> - Advanced git operations</li>
+                    <li><code>docker</code> - Container management</li>
+                    <li><code>aws</code> - AWS service access</li>
+                    <li>Custom servers for any API/service</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Use Case Scenarios</h2>
+        <div class="pros-cons">
+            <div class="pros">
+                <h3>When to Use WSL (Your Current Setup)</h3>
+                <ul>
+                    <li>Local development projects</li>
+                    <li>File-intensive operations</li>
+                    <li>Quick prototyping</li>
+                    <li>Standard web development</li>
+                    <li>Git operations</li>
+                    <li>Running build tools</li>
+                    <li>Direct system access needed</li>
+                    <li>Maximum performance required</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>When to Add MCP</h3>
+                <ul>
+                    <li>Database integration needed</li>
+                    <li>External API access</li>
+                    <li>Cloud service integration</li>
+                    <li>Custom tool requirements</li>
+                    <li>Team-shared configurations</li>
+                    <li>Sandboxed access preferred</li>
+                    <li>Cross-platform consistency</li>
+                    <li>Specialized workflows</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Configuration Examples</h2>
+        <div class="tech-grid">
+            <div class="tech-card">
+                <h3>Current WSL Setup</h3>
+                <pre><code># No configuration needed!
+# Just run:
+claude
+
+# Access your project:
+cd /mnt/c/projects/road_mapper
+npm install
+npm run dev</code></pre>
+            </div>
+            <div class="tech-card">
+                <h3>MCP Configuration</h3>
+                <pre><code># ~/.config/claude/mcp_settings.json
+{
+  "servers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_URL": "postgresql://..."
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_..."
+      }
+    }
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Data Flow Diagrams</h2>
+        <div class="mermaid-diagram">
+            <h3>WSL Data Flow</h3>
+            <pre style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+User Request → Claude Code → Tool Selection → Direct System Call
+                                    ↓
+                              File System/Bash
+                                    ↓
+                              Response → User
+            </pre>
+        </div>
+        <div class="mermaid-diagram">
+            <h3>MCP Data Flow</h3>
+            <pre style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+User Request → Claude Code → Tool Selection → MCP Client
+                                    ↓
+                              JSON-RPC Request
+                                    ↓
+                              MCP Server
+                                    ↓
+                          External Resource/API
+                                    ↓
+                          JSON-RPC Response
+                                    ↓
+                              Response → User
+            </pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Summary</h2>
+        <p><strong>Your current WSL setup</strong> is ideal for the Road Mapper project because:</p>
+        <ul>
+            <li>You have direct file system access</li>
+            <li>Native performance for development tasks</li>
+            <li>All necessary tools are built-in</li>
+            <li>No additional configuration needed</li>
+        </ul>
+        <p><strong>Consider adding MCP</strong> when you need:</p>
+        <ul>
+            <li>Database integration for storing road maps</li>
+            <li>Cloud deployment automation</li>
+            <li>External API integrations</li>
+            <li>Team collaboration features</li>
+        </ul>
+    </div>
+
+    <div class="container" style="text-align: center; color: #666;">
+        <p>Generated for Road Mapper project • Claude Code Architecture Documentation</p>
+    </div>
+</body>
+</html>

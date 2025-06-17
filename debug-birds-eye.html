@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Bird's Eye View</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            font-family: monospace;
+            color: #0f0;
+        }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow: auto;
+            max-height: 400px;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <h2>Debug Bird's Eye View</h2>
+    <p>Open the Road Mapper app in another tab, zoom out to 10%, then use these tools to debug.</p>
+    
+    <div>
+        <button onclick="checkSVG()">Check SVG Elements</button>
+        <button onclick="checkFilters()">Check Filters</button>
+        <button onclick="checkRoadStyles()">Check Road Styles</button>
+        <button onclick="forceApplyBirdsEye()">Force Apply Bird's Eye Style</button>
+    </div>
+    
+    <pre id="output">Output will appear here...</pre>
+    
+    <script>
+        function log(msg) {
+            document.getElementById('output').textContent += msg + '\n';
+        }
+        
+        function clear() {
+            document.getElementById('output').textContent = '';
+        }
+        
+        function checkSVG() {
+            clear();
+            log('Checking SVG elements...\n');
+            
+            // Try to access the app from another tab/window
+            const svg = document.querySelector('#svg-container svg');
+            if (!svg) {
+                log('ERROR: SVG not found. Make sure Road Mapper is open.');
+                return;
+            }
+            
+            // Check filters
+            const filters = svg.querySelectorAll('defs filter');
+            log(`Filters found: ${filters.length}`);
+            filters.forEach(f => log(`  - ${f.id}`));
+            
+            // Check roads
+            const roads = svg.querySelectorAll('.road-path');
+            log(`\nRoads found: ${roads.length}`);
+            roads.forEach((r, i) => {
+                const stroke = r.getAttribute('stroke');
+                const strokeWidth = r.getAttribute('stroke-width');
+                const filter = r.style.filter;
+                log(`  Road ${i}: stroke=${stroke}, width=${strokeWidth}, filter=${filter}`);
+            });
+            
+            // Check intersections
+            const intersections = svg.querySelectorAll('.intersection');
+            log(`\nIntersections found: ${intersections.length}`);
+        }
+        
+        function checkFilters() {
+            clear();
+            log('Checking filter definitions...\n');
+            
+            // This would need to run in the context of the Road Mapper app
+            log('To check filters, run this in the Road Mapper console:');
+            log('document.querySelectorAll("svg defs filter").forEach(f => console.log(f.id, f.outerHTML))');
+        }
+        
+        function checkRoadStyles() {
+            clear();
+            log('To check road styles, run this in the Road Mapper console:\n');
+            log(`
+// Check current zoom
+console.log('Current zoom:', window.app?.svgRenderer?.viewport?.zoom);
+
+// Check road elements
+document.querySelectorAll('.road-path').forEach((road, i) => {
+    console.log(\`Road \${i}:\`, {
+        stroke: road.getAttribute('stroke'),
+        strokeWidth: road.getAttribute('stroke-width'),
+        opacity: road.getAttribute('opacity'),
+        filter: road.style.filter
+    });
+});
+
+// Check if bird's eye should be active
+const zoom = window.app?.svgRenderer?.viewport?.zoom || 0;
+console.log('Should be birds eye?', zoom < 0.2);
+            `);
+        }
+        
+        function forceApplyBirdsEye() {
+            clear();
+            log('To force apply bird\'s eye style, run this in the Road Mapper console:\n');
+            log(`
+// Force bird's eye style on all roads
+document.querySelectorAll('.road-path').forEach(road => {
+    road.setAttribute('stroke', '#00ff88');
+    road.setAttribute('stroke-width', '3');
+    road.setAttribute('opacity', '1');
+    road.style.filter = 'url(#circuit-glow)';
+});
+
+// Hide curbs
+document.querySelectorAll('.curbs').forEach(c => c.style.display = 'none');
+
+// Force bird's eye style on intersections
+document.querySelectorAll('.intersection').forEach(int => {
+    while (int.firstChild) int.removeChild(int.firstChild);
+    
+    // Add LED circles
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    const c1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c1.setAttribute('cx', int.getAttribute('transform')?.match(/translate\\((\\d+)/)?.[1] || 0);
+    c1.setAttribute('cy', int.getAttribute('transform')?.match(/translate\\(\\d+,\\s*(\\d+)/)?.[1] || 0);
+    c1.setAttribute('r', '6');
+    c1.setAttribute('fill', '#ff0044');
+    c1.setAttribute('opacity', '0.3');
+    
+    g.appendChild(c1);
+    int.appendChild(g);
+});
+
+console.log('Bird\'s eye style force applied!');
+            `);
+        }
+    </script>
+</body>
+</html>

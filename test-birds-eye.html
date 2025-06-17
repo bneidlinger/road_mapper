@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bird's Eye View Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        svg {
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+        .info {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>Bird's Eye View Test</h2>
+        <p>This should show green glowing lines and red LED dots</p>
+    </div>
+    
+    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <!-- Circuit board glow filter -->
+            <filter id="circuit-glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        
+        <!-- Test roads (green glowing lines) -->
+        <g id="roads">
+            <!-- Horizontal road -->
+            <path d="M 100 300 L 700 300" 
+                  stroke="#00ff88" 
+                  stroke-width="3" 
+                  fill="none"
+                  style="filter: url(#circuit-glow)"/>
+            
+            <!-- Vertical road -->
+            <path d="M 400 100 L 400 500" 
+                  stroke="#00ff88" 
+                  stroke-width="3" 
+                  fill="none"
+                  style="filter: url(#circuit-glow)"/>
+            
+            <!-- Diagonal road -->
+            <path d="M 200 200 L 600 400" 
+                  stroke="#00ff88" 
+                  stroke-width="3" 
+                  fill="none"
+                  style="filter: url(#circuit-glow)"/>
+        </g>
+        
+        <!-- Test intersections (red LED dots) -->
+        <g id="intersections">
+            <!-- Center intersection -->
+            <g>
+                <circle cx="400" cy="300" r="6" fill="#ff0044" opacity="0.3" style="filter: url(#circuit-glow)"/>
+                <circle cx="400" cy="300" r="4" fill="#ff0044" opacity="0.6"/>
+                <circle cx="400" cy="300" r="2" fill="#ff3366" opacity="1"/>
+            </g>
+            
+            <!-- Left intersection -->
+            <g>
+                <circle cx="200" cy="200" r="6" fill="#ff0044" opacity="0.3" style="filter: url(#circuit-glow)"/>
+                <circle cx="200" cy="200" r="4" fill="#ff0044" opacity="0.6"/>
+                <circle cx="200" cy="200" r="2" fill="#ff3366" opacity="1"/>
+            </g>
+            
+            <!-- Right intersection -->
+            <g>
+                <circle cx="600" cy="400" r="6" fill="#ff0044" opacity="0.3" style="filter: url(#circuit-glow)"/>
+                <circle cx="600" cy="400" r="4" fill="#ff0044" opacity="0.6"/>
+                <circle cx="600" cy="400" r="2" fill="#ff3366" opacity="1"/>
+            </g>
+        </g>
+    </svg>
+    
+    <div class="info">
+        <p>If you see glowing green lines and red dots above, the bird's eye view styling is working correctly.</p>
+    </div>
+</body>
+</html>

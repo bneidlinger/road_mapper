@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Bird's Eye Test</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <style>
+        #test-controls {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #00ff88;
+            padding: 15px;
+            color: white;
+            z-index: 1000;
+            border-radius: 4px;
+        }
+        button.test { 
+            display: block;
+            width: 100%;
+            margin: 5px 0; 
+            padding: 8px; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button.test:hover { 
+            background: #333; 
+            border-color: #00ff88;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #111;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Road Mapper - Final Test</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        <div class="canvas-container" id="svg-container"></div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    
+    <div id="test-controls">
+        <h3 style="margin-top: 0; color: #00ff88;">Bird's Eye Test</h3>
+        <button class="test" onclick="runFullTest()">Run Full Test</button>
+        <button class="test" onclick="toggleZoom()">Toggle Zoom</button>
+        <button class="test" onclick="checkVisibility()">Check Visibility</button>
+        <div class="status" id="status">Press "Run Full Test" to begin</div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        let isBirdsEye = false;
+        const status = document.getElementById('status');
+        
+        function updateStatus(msg) {
+            status.innerHTML += msg + '<br>';
+            status.scrollTop = status.scrollHeight;
+        }
+        
+        function runFullTest() {
+            status.innerHTML = '';
+            updateStatus('Starting test...');
+            
+            if (!window.app) {
+                updateStatus('ERROR: App not loaded');
+                return;
+            }
+            
+            // Clear and create test network
+            app.elementManager.clear();
+            updateStatus('Cleared existing elements');
+            
+            // Create a grid of roads
+            const roads = [
+                // Horizontal roads
+                [{x: -300, y: -100}, {x: 300, y: -100}],
+                [{x: -300, y: 0}, {x: 300, y: 0}],
+                [{x: -300, y: 100}, {x: 300, y: 100}],
+                // Vertical roads
+                [{x: -100, y: -200}, {x: -100, y: 200}],
+                [{x: 0, y: -200}, {x: 0, y: 200}],
+                [{x: 100, y: -200}, {x: 100, y: 200}]
+            ];
+            
+            roads.forEach((points, i) => {
+                const road = app.elementManager.createRoad('STREET');
+                points.forEach(p => road.addPoint(p.x, p.y));
+                road.finalize();
+                app.elementManager.addRoad(road);
+            });
+            
+            updateStatus(`Created ${roads.length} roads`);
+            updateStatus(`Intersections: ${app.elementManager.getIntersections().length}`);
+            
+            // Switch to bird's eye view after a delay
+            setTimeout(() => {
+                updateStatus('Switching to bird\'s eye view...');
+                app.svgRenderer.viewport.setZoom(0.15);
+                isBirdsEye = true;
+                
+                // Check after another delay
+                setTimeout(() => {
+                    checkVisibility();
+                }, 500);
+            }, 1000);
+        }
+        
+        function toggleZoom() {
+            if (!window.app) return;
+            
+            if (isBirdsEye) {
+                app.svgRenderer.viewport.setZoom(1);
+                isBirdsEye = false;
+                updateStatus('Switched to normal view');
+            } else {
+                app.svgRenderer.viewport.setZoom(0.15);
+                isBirdsEye = true;
+                updateStatus('Switched to bird\'s eye view');
+            }
+        }
+        
+        function checkVisibility() {
+            updateStatus('=== Checking visibility ===');
+            
+            const zoom = app?.svgRenderer?.viewport?.zoom || 1;
+            updateStatus(`Current zoom: ${zoom.toFixed(3)}`);
+            
+            // Check background
+            const bg = document.getElementById('svg-container').style.backgroundColor;
+            updateStatus(`Background: ${bg}`);
+            
+            // Check roads
+            const roadPaths = document.querySelectorAll('.road-path');
+            updateStatus(`Found ${roadPaths.length} road paths`);
+            
+            if (roadPaths.length > 0) {
+                const firstRoad = roadPaths[0];
+                const stroke = firstRoad.getAttribute('stroke');
+                const width = firstRoad.getAttribute('stroke-width');
+                const display = window.getComputedStyle(firstRoad).display;
+                const visibility = window.getComputedStyle(firstRoad).visibility;
+                const opacity = window.getComputedStyle(firstRoad).opacity;
+                
+                updateStatus(`First road:`);
+                updateStatus(`  stroke: ${stroke}`);
+                updateStatus(`  width: ${width}`);
+                updateStatus(`  display: ${display}`);
+                updateStatus(`  visibility: ${visibility}`);
+                updateStatus(`  opacity: ${opacity}`);
+                
+                // Check parent visibility
+                let parent = firstRoad.parentElement;
+                while (parent && parent.tagName !== 'svg') {
+                    const pDisplay = window.getComputedStyle(parent).display;
+                    const pVisibility = window.getComputedStyle(parent).visibility;
+                    updateStatus(`  parent (${parent.className}): display=${pDisplay}, visibility=${pVisibility}`);
+                    parent = parent.parentElement;
+                }
+            }
+            
+            // Check intersections
+            const intersections = document.querySelectorAll('.intersection circle');
+            updateStatus(`Found ${intersections.length} intersection circles`);
+        }
+        
+        // Auto-run test after load
+        setTimeout(() => {
+            if (window.app) {
+                updateStatus('App loaded successfully');
+                runFullTest();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

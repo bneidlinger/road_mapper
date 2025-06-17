@@ -1,0 +1,321 @@
+/* Import SaaS Quality Styles */
+@import url('./saas-quality.css');
+@import url('./properties-panel.css');
+
+/* Legacy styles for compatibility */
+:root {
+  /* Override with SaaS colors but keep legacy names */
+  --bg-primary: #0f0f14;
+  --bg-secondary: #1a1a23;
+  --bg-tertiary: #23232f;
+  --text-primary: #e8e8ec;
+  --text-secondary: #a0a0b8;
+  --accent-primary: #00d4ff;
+  --accent-secondary: #00a8cc;
+  --border-color: #2a2a3a;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--border-color);
+  border-color: var(--accent-secondary);
+}
+
+.btn-primary {
+  background-color: var(--accent-secondary);
+  color: var(--bg-primary);
+  border-color: var(--accent-secondary);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+/* Main Layout */
+.main {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+/* Toolbar */
+.toolbar {
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tool-button {
+  width: 48px;
+  height: 48px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.tool-button.active {
+  background-color: var(--accent-secondary);
+  border-color: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+.tool-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.toolbar-separator {
+  width: 80%;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 0.5rem 0;
+}
+
+.road-type-selector {
+  padding: 0.5rem 1rem;
+  text-align: center;
+}
+
+.toolbar-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.toolbar-select {
+  width: 100%;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.toolbar-select:hover {
+  background-color: var(--border-color);
+}
+
+.toolbar-select:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* Canvas/SVG Container */
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+#svg-container svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+/* SVG Element Styles */
+.road-path {
+  pointer-events: stroke;
+}
+
+.sidewalk-path {
+  opacity: 0.8;
+}
+
+.lane-markings {
+  pointer-events: none;
+}
+
+.edge-line {
+  opacity: 0.8;
+}
+
+.lane-divider {
+  opacity: 0.6;
+}
+
+.center-line {
+  opacity: 0.8;
+}
+
+.element.selected .selection-highlight {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+  100% { opacity: 0.3; }
+}
+
+.grid-background {
+  pointer-events: none;
+}
+
+/* Status Bar */
+.status-bar {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 0.5rem 2rem;
+  display: flex;
+  gap: 2rem;
+  font-size: 0.875rem;
+}
+
+.status-item {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.status-label {
+  color: var(--text-secondary);
+}
+
+/* Properties Panel */
+.properties-panel {
+  background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  width: 300px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.properties-panel h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--accent-primary);
+}
+
+.property-group {
+  margin-bottom: 1.5rem;
+}
+
+.property-group label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.property-group input,
+.property-group select {
+  width: 100%;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+/* Modals */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal-header {
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--accent-primary);
+}
+
+.modal-body {
+  margin-bottom: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}

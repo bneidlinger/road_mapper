@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird's Eye View Controls Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #controls {
+            background: #1a1a1a;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        button.active {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        #info {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+        
+        #app-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="setAppZoom(0.1)">Bird's Eye (0.1x)</button>
+        <button onclick="setAppZoom(0.15)">Far (0.15x)</button>
+        <button onclick="setAppZoom(0.2)">Threshold (0.2x)</button>
+        <button onclick="setAppZoom(0.5)">Medium (0.5x)</button>
+        <button onclick="setAppZoom(1)" class="active">Normal (1x)</button>
+        <button onclick="setAppZoom(2)">Close (2x)</button>
+        <button onclick="setAppZoom(4)">Very Close (4x)</button>
+        
+        <div id="info">
+            <span>Zoom: <strong id="zoom-level">1</strong></span>
+            <span>Mode: <strong id="view-mode">Normal</strong></span>
+        </div>
+    </div>
+    
+    <div id="app-container">
+        <iframe id="app-frame" src="index.html"></iframe>
+    </div>
+    
+    <script>
+        let appWindow = null;
+        let currentZoom = 1;
+        
+        // Wait for iframe to load
+        document.getElementById('app-frame').onload = function() {
+            appWindow = this.contentWindow;
+            console.log('App loaded');
+            
+            // Try to access the app's viewport after a delay
+            setTimeout(() => {
+                tryAccessViewport();
+            }, 1000);
+        };
+        
+        function tryAccessViewport() {
+            if (appWindow && appWindow.app && appWindow.app.svgRenderer && appWindow.app.svgRenderer.viewport) {
+                console.log('Viewport accessed successfully');
+                // Add the app object to window for easier access
+                window.app = appWindow.app;
+            } else {
+                console.log('Viewport not ready, retrying...');
+                setTimeout(tryAccessViewport, 500);
+            }
+        }
+        
+        function setAppZoom(zoom) {
+            currentZoom = zoom;
+            
+            // Update UI
+            document.getElementById('zoom-level').textContent = zoom;
+            document.getElementById('view-mode').textContent = zoom < 0.2 ? 'Bird\'s Eye' : 'Normal';
+            
+            // Update active button
+            document.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Try to set zoom in the app
+            if (appWindow && appWindow.app && appWindow.app.svgRenderer && appWindow.app.svgRenderer.viewport) {
+                appWindow.app.svgRenderer.viewport.setZoom(zoom);
+                console.log('Zoom set to:', zoom);
+                
+                // Log the state
+                const viewport = appWindow.app.svgRenderer.viewport;
+                console.log('Viewport state:', {
+                    zoom: viewport.zoom,
+                    x: viewport.x,
+                    y: viewport.y
+                });
+            } else {
+                console.error('App viewport not available');
+            }
+        }
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '-' || e.key === '_') {
+                const newZoom = Math.max(0.1, currentZoom * 0.8);
+                setAppZoom(newZoom);
+            } else if (e.key === '=' || e.key === '+') {
+                const newZoom = Math.min(6, currentZoom * 1.25);
+                setAppZoom(newZoom);
+            } else if (e.key === '0') {
+                setAppZoom(1);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Mapper - Building Generation Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        #app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .controls {
+            background: #2a2a2a;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        button {
+            background: #3a3a3a;
+            color: #e0e0e0;
+            border: 1px solid #4a4a4a;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #4a4a4a;
+        }
+        
+        button:active {
+            background: #2a2a2a;
+        }
+        
+        .info {
+            margin-left: auto;
+            font-size: 14px;
+            color: #888;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: #0a0a0a;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="controls">
+            <button onclick="addSampleRoads()">Add Sample Roads</button>
+            <button onclick="generateBuildings()">Generate Buildings</button>
+            <button onclick="clearBuildings()">Clear Buildings</button>
+            <button onclick="clearAll()">Clear All</button>
+            <span class="info">
+                Click "Add Sample Roads" first, then "Generate Buildings" | 
+                Keys: V (Select), R (Road), Space (Pan), G (Grid)
+            </span>
+        </div>
+        <div id="canvas-container"></div>
+    </div>
+
+    <script type="module">
+        import { RoadMapperApp } from './src/RoadMapperApp.js';
+        import { BuildingGenerator } from './src/modules/BuildingGenerator.js';
+        
+        // Initialize the app
+        const app = new RoadMapperApp('canvas-container');
+        let buildingGenerator = new BuildingGenerator(app.elementManager);
+        
+        // Make functions available globally
+        window.app = app;
+        
+        window.addSampleRoads = function() {
+            // Clear existing elements
+            app.elementManager.clear();
+            
+            // Create a simple grid of roads
+            const roadWidth = 400;
+            const roadSpacing = 250;
+            const offset = 100;
+            
+            // Horizontal roads
+            for (let y = offset; y <= offset + roadWidth; y += roadSpacing) {
+                const roadId = `road_h_${y}`;
+                const road = new app.Road(roadId, 'street');
+                road.points = [
+                    { x: offset, y: y },
+                    { x: offset + roadWidth, y: y }
+                ];
+                app.elementManager.addRoad(road);
+            }
+            
+            // Vertical roads
+            for (let x = offset; x <= offset + roadWidth; x += roadSpacing) {
+                const roadId = `road_v_${x}`;
+                const road = new app.Road(roadId, 'street');
+                road.points = [
+                    { x: x, y: offset },
+                    { x: x, y: offset + roadWidth }
+                ];
+                app.elementManager.addRoad(road);
+            }
+            
+            // Create intersections at crossings
+            for (let x = offset; x <= offset + roadWidth; x += roadSpacing) {
+                for (let y = offset; y <= offset + roadWidth; y += roadSpacing) {
+                    app.elementManager.createIntersectionAt(x, y);
+                }
+            }
+            
+            // Center view on the road network
+            app.renderer.viewport.centerOn(offset + roadWidth/2, offset + roadWidth/2);
+            app.renderer.viewport.setZoom(1.0);
+        };
+        
+        window.generateBuildings = function() {
+            const count = buildingGenerator.generateBuildings();
+            console.log(`Generated ${count} buildings`);
+        };
+        
+        window.clearBuildings = function() {
+            buildingGenerator.clearBuildings();
+        };
+        
+        window.clearAll = function() {
+            app.elementManager.clear();
+        };
+        
+        // Import Road class for sample road creation
+        import { Road } from './src/modules/elements/Road.js';
+        window.app.Road = Road;
+    </script>
+</body>
+</html>

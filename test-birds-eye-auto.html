@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird's Eye View Auto Test</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <style>
+        #test-info {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #00ff88;
+            padding: 20px;
+            color: white;
+            font-family: monospace;
+            z-index: 1000;
+            border-radius: 4px;
+        }
+        #test-info h3 {
+            margin-top: 0;
+            color: #00ff88;
+        }
+        .test-value {
+            color: #00ff88;
+        }
+        .test-button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .test-button:hover {
+            background: #444;
+            border-color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Road Mapper - Bird's Eye Test</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        
+        <div class="canvas-container" id="svg-container">
+        </div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    
+    <div id="test-info">
+        <h3>Bird's Eye View Test</h3>
+        <p>Zoom: <span class="test-value" id="zoom-value">-</span></p>
+        <p>Mode: <span class="test-value" id="mode-value">-</span></p>
+        <p>Roads: <span class="test-value" id="road-count">0</span></p>
+        <p>Intersections: <span class="test-value" id="intersection-count">0</span></p>
+        <hr style="margin: 10px 0; border-color: #333;">
+        <button class="test-button" onclick="runAutomatedTest()">Run Automated Test</button>
+        <button class="test-button" onclick="setZoom(0.1)">Bird's Eye (0.1x)</button>
+        <button class="test-button" onclick="setZoom(0.15)">Bird's Eye (0.15x)</button>
+        <button class="test-button" onclick="setZoom(0.2)">Threshold (0.2x)</button>
+        <button class="test-button" onclick="setZoom(1)">Normal (1x)</button>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        let updateInterval = null;
+        
+        // Start monitoring when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, waiting for app...');
+            setTimeout(initializeTest, 2000);
+        });
+        
+        function initializeTest() {
+            if (!window.app) {
+                console.log('App not ready, retrying...');
+                setTimeout(initializeTest, 500);
+                return;
+            }
+            
+            console.log('App ready, starting monitor...');
+            startMonitoring();
+            
+            // Run automated test after a short delay
+            setTimeout(runAutomatedTest, 1000);
+        }
+        
+        function startMonitoring() {
+            updateInterval = setInterval(() => {
+                if (window.app && window.app.svgRenderer && window.app.svgRenderer.viewport) {
+                    const viewport = window.app.svgRenderer.viewport;
+                    const zoom = viewport.zoom;
+                    
+                    document.getElementById('zoom-value').textContent = zoom.toFixed(3);
+                    document.getElementById('mode-value').textContent = zoom < 0.2 ? 'BIRD\'S EYE' : 'Normal';
+                    document.getElementById('road-count').textContent = window.app.elementManager.getRoads().length;
+                    document.getElementById('intersection-count').textContent = window.app.elementManager.getIntersections().length;
+                }
+            }, 100);
+        }
+        
+        function setZoom(zoomLevel) {
+            if (!window.app || !window.app.svgRenderer) {
+                console.error('App not ready');
+                return;
+            }
+            
+            console.log(`Setting zoom to ${zoomLevel}x`);
+            window.app.svgRenderer.viewport.setZoom(zoomLevel);
+        }
+        
+        function addTestRoadNetwork() {
+            console.log('Adding test road network...');
+            
+            const roads = [
+                // Main horizontal road
+                { type: 'ARTERIAL', points: [{x: -300, y: 0}, {x: 300, y: 0}] },
+                // Main vertical road
+                { type: 'STREET', points: [{x: 0, y: -200}, {x: 0, y: 200}] },
+                // Diagonal roads
+                { type: 'STREET', points: [{x: -150, y: -150}, {x: 150, y: 150}] },
+                { type: 'STREET', points: [{x: 150, y: -150}, {x: -150, y: 150}] },
+                // Grid roads
+                { type: 'STREET', points: [{x: -200, y: -100}, {x: -200, y: 100}] },
+                { type: 'STREET', points: [{x: 200, y: -100}, {x: 200, y: 100}] },
+                { type: 'STREET', points: [{x: -100, y: -200}, {x: 100, y: -200}] },
+                { type: 'STREET', points: [{x: -100, y: 200}, {x: 100, y: 200}] }
+            ];
+            
+            roads.forEach(roadData => {
+                const road = window.app.elementManager.createRoad(roadData.type);
+                roadData.points.forEach(point => {
+                    road.addPoint(point.x, point.y);
+                });
+                road.finalize();
+                window.app.elementManager.addRoad(road);
+            });
+            
+            console.log(`Added ${roads.length} roads`);
+        }
+        
+        function runAutomatedTest() {
+            console.log('=== Starting Automated Bird\'s Eye View Test ===');
+            
+            // Clear existing elements
+            window.app.elementManager.clear();
+            
+            // Add test roads
+            addTestRoadNetwork();
+            
+            // Create a sequence of zoom levels to test
+            const testSequence = [
+                { zoom: 1, duration: 2000, description: 'Normal view' },
+                { zoom: 0.5, duration: 2000, description: 'Zoomed out' },
+                { zoom: 0.2, duration: 2000, description: 'Threshold (0.2x)' },
+                { zoom: 0.15, duration: 3000, description: 'Bird\'s eye view (0.15x)' },
+                { zoom: 0.1, duration: 3000, description: 'Full bird\'s eye (0.1x)' },
+                { zoom: 1, duration: 1000, description: 'Back to normal' }
+            ];
+            
+            let index = 0;
+            
+            function nextStep() {
+                if (index >= testSequence.length) {
+                    console.log('=== Test Complete ===');
+                    return;
+                }
+                
+                const step = testSequence[index];
+                console.log(`Step ${index + 1}: ${step.description} - Setting zoom to ${step.zoom}x`);
+                setZoom(step.zoom);
+                
+                index++;
+                setTimeout(nextStep, step.duration);
+            }
+            
+            nextStep();
+        }
+        
+        // Keyboard shortcuts for manual testing
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'b' || e.key === 'B') {
+                console.log('B key pressed - jumping to bird\'s eye view');
+                setZoom(0.15);
+            }
+        });
+    </script>
+</body>
+</html>

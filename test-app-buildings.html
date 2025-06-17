@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Mapper - Building Test</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        .building-controls {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(15, 15, 20, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        .building-controls h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #00d4ff;
+        }
+        .building-controls button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #2a2a3a;
+            border: 1px solid #3a3a4a;
+            color: #e0e0e0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .building-controls button:hover {
+            background: #3a3a4a;
+            border-color: #00d4ff;
+        }
+        .building-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-brand">
+            <h1>Road Mapper - Building Test</h1>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        <div class="canvas-container" id="svg-container">
+            <div class="canvas-loading hidden" id="canvas-loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Initializing Road Mapper...</div>
+            </div>
+        </div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    <div id="properties-panel"></div>
+
+    <div class="building-controls">
+        <h3>Building Controls</h3>
+        <button onclick="testDirectBuilding()">Add Single Building</button>
+        <button onclick="generateInArea()">Generate in Area</button>
+        <button onclick="generateInBlocks()">Generate in All Blocks</button>
+        <button onclick="createTestGrid()">Create Road Grid</button>
+        <button onclick="clearBuildings()">Clear Buildings</button>
+        <button onclick="clearAll()">Clear All</button>
+        <div class="building-info" id="building-info">
+            Buildings: 0<br>
+            Roads: 0
+        </div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    <script type="module">
+        // Wait for app to initialize
+        let checkInterval = setInterval(() => {
+            if (window.app && window.app.elementManager) {
+                clearInterval(checkInterval);
+                initBuildingControls();
+            }
+        }, 100);
+
+        function updateInfo() {
+            const buildings = window.app.elementManager.getBuildings().length;
+            const roads = window.app.elementManager.getRoads().length;
+            document.getElementById('building-info').innerHTML = 
+                `Buildings: ${buildings}<br>Roads: ${roads}`;
+        }
+
+        async function initBuildingControls() {
+            console.log('Building controls initialized');
+            
+            // Import necessary modules
+            const { Building } = await import('./src/modules/elements/Building.js');
+            const { BuildingGenerator } = await import('./src/modules/BuildingGenerator.js');
+            const { Road } = await import('./src/modules/elements/Road.js');
+            
+            const generator = new BuildingGenerator(window.app.elementManager);
+            
+            // Listen for changes
+            window.app.elementManager.on('buildingAdded', updateInfo);
+            window.app.elementManager.on('buildingRemoved', updateInfo);
+            window.app.elementManager.on('roadAdded', updateInfo);
+            window.app.elementManager.on('roadRemoved', updateInfo);
+            
+            window.testDirectBuilding = function() {
+                const building = new Building(
+                    'test_' + Date.now(),
+                    200 + Math.random() * 200,
+                    200 + Math.random() * 200,
+                    60 + Math.random() * 40,
+                    80 + Math.random() * 40,
+                    ['residential', 'commercial', 'industrial', 'office'][Math.floor(Math.random() * 4)]
+                );
+                
+                window.app.elementManager.addBuilding(building);
+                console.log('Added building:', building);
+                updateInfo();
+            };
+            
+            window.generateInArea = function() {
+                const count = generator.generateBuildingsInArea(100, 100, 400, 400);
+                console.log(`Generated ${count} buildings in area`);
+                updateInfo();
+            };
+            
+            window.generateInBlocks = function() {
+                const count = generator.generateBuildings();
+                console.log(`Generated ${count} buildings in detected blocks`);
+                updateInfo();
+            };
+            
+            window.createTestGrid = function() {
+                // Clear first
+                window.app.elementManager.clear();
+                
+                // Create grid of roads
+                const size = 300;
+                const spacing = 150;
+                const offset = 100;
+                
+                // Horizontal roads
+                for (let i = 0; i < 3; i++) {
+                    const road = new Road(`road_h_${i}`, 'street');
+                    road.points = [
+                        { x: offset, y: offset + i * spacing },
+                        { x: offset + size, y: offset + i * spacing }
+                    ];
+                    window.app.elementManager.addRoad(road);
+                }
+                
+                // Vertical roads
+                for (let i = 0; i < 3; i++) {
+                    const road = new Road(`road_v_${i}`, 'street');
+                    road.points = [
+                        { x: offset + i * spacing, y: offset },
+                        { x: offset + i * spacing, y: offset + size }
+                    ];
+                    window.app.elementManager.addRoad(road);
+                }
+                
+                // Create intersections
+                for (let x = 0; x < 3; x++) {
+                    for (let y = 0; y < 3; y++) {
+                        window.app.elementManager.createIntersectionAt(
+                            offset + x * spacing,
+                            offset + y * spacing
+                        );
+                    }
+                }
+                
+                console.log('Created road grid');
+                updateInfo();
+                
+                // Center view
+                window.app.svgRenderer.viewport.centerOn(offset + size/2, offset + size/2);
+                window.app.svgRenderer.viewport.setZoom(1.0);
+            };
+            
+            window.clearBuildings = function() {
+                generator.clearBuildings();
+                updateInfo();
+            };
+            
+            window.clearAll = function() {
+                window.app.elementManager.clear();
+                updateInfo();
+            };
+            
+            updateInfo();
+        }
+    </script>
+</body>
+</html>

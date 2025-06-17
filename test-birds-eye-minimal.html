@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Bird's Eye Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border: 1px solid #333;
+            z-index: 100;
+        }
+        button {
+            display: block;
+            margin: 5px 0;
+            padding: 5px 10px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>Bird's Eye View Test</h3>
+        <p>Current zoom: <span id="zoom-level">1</span></p>
+        <p>Mode: <span id="mode">Normal</span></p>
+        <button onclick="app.svgRenderer.viewport.setZoom(0.1)">Zoom 0.1x (Bird's Eye)</button>
+        <button onclick="app.svgRenderer.viewport.setZoom(0.15)">Zoom 0.15x (Bird's Eye)</button>
+        <button onclick="app.svgRenderer.viewport.setZoom(0.2)">Zoom 0.2x (Threshold)</button>
+        <button onclick="app.svgRenderer.viewport.setZoom(1)">Zoom 1x (Normal)</button>
+        <button onclick="addSimpleTestRoad()">Add Test Road</button>
+    </div>
+    
+    <header class="header">
+        <h1>Road Mapper</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        
+        <div class="canvas-container" id="svg-container">
+        </div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        // Monitor zoom changes
+        let monitorInterval = null;
+        
+        function startMonitoring() {
+            monitorInterval = setInterval(() => {
+                if (window.app && window.app.svgRenderer && window.app.svgRenderer.viewport) {
+                    const zoom = window.app.svgRenderer.viewport.zoom;
+                    document.getElementById('zoom-level').textContent = zoom.toFixed(2);
+                    document.getElementById('mode').textContent = zoom < 0.2 ? 'Bird\'s Eye' : 'Normal';
+                }
+            }, 100);
+        }
+        
+        function addSimpleTestRoad() {
+            if (!window.app || !window.app.elementManager) {
+                console.error('App not ready');
+                return;
+            }
+            
+            // Create a simple road
+            const road = app.elementManager.createRoad('STREET');
+            road.addPoint(-200, 0);
+            road.addPoint(200, 0);
+            road.finalize();
+            app.elementManager.addRoad(road);
+            
+            // Create another road to form an intersection
+            const road2 = app.elementManager.createRoad('STREET');
+            road2.addPoint(0, -150);
+            road2.addPoint(0, 150);
+            road2.finalize();
+            app.elementManager.addRoad(road2);
+            
+            console.log('Test roads added');
+            console.log('Roads:', app.elementManager.getRoads().length);
+            console.log('Intersections:', app.elementManager.getIntersections().length);
+        }
+        
+        // Start monitoring when app is ready
+        setTimeout(() => {
+            if (window.app) {
+                startMonitoring();
+                console.log('Monitoring started');
+                
+                // Add initial test roads
+                addSimpleTestRoad();
+                
+                // Set to bird's eye view
+                setTimeout(() => {
+                    app.svgRenderer.viewport.setZoom(0.15);
+                    console.log('Set to bird\'s eye view');
+                }, 500);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

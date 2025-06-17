@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zoom Debug Helper</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            font-family: monospace;
+            color: #0f0;
+        }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow: auto;
+            max-height: 400px;
+            border: 1px solid #333;
+            margin: 10px 0;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #444;
+        }
+        .info {
+            background: #1a1a1a;
+            padding: 10px;
+            border: 1px solid #333;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Zoom Debug Helper</h2>
+    <p>Open Road Mapper in another tab first, then use these tools.</p>
+    
+    <div class="info">
+        <p>Instructions:</p>
+        <ol>
+            <li>Open Road Mapper in another tab</li>
+            <li>Add some test roads (run <code>addTestRoads()</code> in console)</li>
+            <li>Come back here and click "Debug Current State"</li>
+            <li>Try zooming out and clicking "Force Bird's Eye View"</li>
+        </ol>
+    </div>
+    
+    <div>
+        <button onclick="debugCurrentState()">Debug Current State</button>
+        <button onclick="forceBirdsEyeView()">Force Bird's Eye View</button>
+        <button onclick="fixBirdsEyeRendering()">Fix Bird's Eye Rendering</button>
+        <button onclick="clear()">Clear Output</button>
+    </div>
+    
+    <pre id="output">Output will appear here...</pre>
+    
+    <script>
+        function log(msg) {
+            document.getElementById('output').textContent += msg + '\n';
+        }
+        
+        function clear() {
+            document.getElementById('output').textContent = '';
+        }
+        
+        function debugCurrentState() {
+            clear();
+            log('Run this in the Road Mapper console:\n');
+            log(`
+// Debug current state
+console.log('=== CURRENT STATE DEBUG ===');
+console.log('Viewport zoom:', app.svgRenderer.viewport.zoom);
+console.log('Should be bird\'s eye?', app.svgRenderer.viewport.zoom < 0.2);
+
+// Check SVG elements
+const svgElements = app.svgRenderer.svgElements;
+console.log('Total SVG elements:', svgElements.size);
+
+// Check roads
+let roadCount = 0;
+svgElements.forEach((element, id) => {
+    if (element.constructor.name === 'SVGRoadElement') {
+        roadCount++;
+        console.log(\`Road \${id}:\`, {
+            hasMainPath: !!element.mainPath,
+            hasGroup: !!element.group,
+            mainPathStroke: element.mainPath?.getAttribute('stroke'),
+            mainPathWidth: element.mainPath?.getAttribute('stroke-width'),
+            filter: element.mainPath?.style.filter
+        });
+    }
+});
+console.log('Total roads:', roadCount);
+
+// Check intersections
+let intersectionCount = 0;
+svgElements.forEach((element, id) => {
+    if (element.constructor.name === 'SVGIntersectionElement') {
+        intersectionCount++;
+        console.log(\`Intersection \${id}:\`, {
+            isBirdsEye: element.isBirdsEye,
+            hasElement: !!element.element
+        });
+    }
+});
+console.log('Total intersections:', intersectionCount);
+            `);
+        }
+        
+        function forceBirdsEyeView() {
+            clear();
+            log('Run this in the Road Mapper console:\n');
+            log(`
+// Force bird's eye view
+console.log('=== FORCING BIRD\'S EYE VIEW ===');
+
+// Set zoom to bird's eye level
+app.svgRenderer.viewport.setZoom(0.15);
+console.log('Zoom set to:', app.svgRenderer.viewport.zoom);
+
+// Force update all elements
+app.svgRenderer.updateVisibility();
+
+// Check if styles were applied
+setTimeout(() => {
+    const roads = document.querySelectorAll('.road-path');
+    console.log('Roads found:', roads.length);
+    roads.forEach((road, i) => {
+        console.log(\`Road \${i} style:\`, {
+            stroke: road.getAttribute('stroke'),
+            width: road.getAttribute('stroke-width'),
+            filter: road.style.filter
+        });
+    });
+    
+    const intersections = document.querySelectorAll('.birds-eye-intersection');
+    console.log('Bird\'s eye intersections found:', intersections.length);
+}, 100);
+            `);
+        }
+        
+        function fixBirdsEyeRendering() {
+            clear();
+            log('Run this in the Road Mapper console to apply a fix:\n');
+            log(`
+// Fix bird's eye rendering
+console.log('=== APPLYING BIRD\'S EYE FIX ===');
+
+// Override updateDetailLevel to ensure it works
+const originalUpdate = app.svgRenderer.updateVisibility;
+app.svgRenderer.updateVisibility = function() {
+    originalUpdate.call(this);
+    
+    // Force re-check all elements
+    const zoom = this.viewport.zoom;
+    const isBirdsEye = zoom < 0.2;
+    
+    if (isBirdsEye) {
+        console.log('Forcing bird\'s eye styles...');
+        
+        // Update all road elements
+        this.svgElements.forEach((element) => {
+            if (element.constructor.name === 'SVGRoadElement') {
+                // Ensure mainPath reference exists
+                if (!element.mainPath && element.group) {
+                    element.mainPath = element.group.querySelector('.road-path');
+                }
+                
+                if (element.mainPath) {
+                    element.mainPath.setAttribute('stroke', '#00ff88');
+                    element.mainPath.setAttribute('stroke-width', '3');
+                    element.mainPath.style.filter = 'url(#circuit-glow)';
+                    
+                    // Hide details
+                    const curbs = element.group.querySelector('.curbs');
+                    if (curbs) curbs.style.display = 'none';
+                    
+                    const shoulders = element.group.querySelector('.shoulders');
+                    if (shoulders) shoulders.style.display = 'none';
+                    
+                    const laneMarkings = element.group.querySelector('.lane-markings');
+                    if (laneMarkings) laneMarkings.style.display = 'none';
+                }
+            }
+        });
+    }
+};
+
+// Trigger the update
+app.svgRenderer.updateVisibility();
+console.log('Fix applied! Try zooming in and out.');
+            `);
+        }
+    </script>
+</body>
+</html>

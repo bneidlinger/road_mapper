@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Buildings</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        #svg-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="addTestBuilding()">Add Test Building</button>
+        <button onclick="addComplexBuilding()">Add Complex Building</button>
+        <button onclick="clear()">Clear</button>
+    </div>
+    <div id="svg-container"></div>
+
+    <script type="module">
+        import { Building } from './src/modules/elements/Building.js';
+        
+        // Create a simple SVG
+        const container = document.getElementById('svg-container');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', '0 0 800 600');
+        svg.style.background = '#0a0a0a';
+        container.appendChild(svg);
+        
+        window.addTestBuilding = function() {
+            const building = new Building(
+                'test_' + Date.now(),
+                100 + Math.random() * 400,
+                100 + Math.random() * 300,
+                60 + Math.random() * 40,
+                80 + Math.random() * 40,
+                ['residential', 'commercial', 'industrial', 'office'][Math.floor(Math.random() * 4)]
+            );
+            
+            const element = building.draw();
+            svg.appendChild(element);
+            
+            console.log('Added building:', building);
+        };
+        
+        window.addComplexBuilding = function() {
+            const building = new Building(
+                'complex_' + Date.now(),
+                200 + Math.random() * 200,
+                150 + Math.random() * 200,
+                100 + Math.random() * 50,
+                120 + Math.random() * 50,
+                'office'
+            );
+            
+            // Force complex footprint
+            building.footprint = building.generateLShapeFootprint();
+            
+            const element = building.draw();
+            svg.appendChild(element);
+            
+            console.log('Added complex building:', building);
+        };
+        
+        window.clear = function() {
+            svg.innerHTML = '';
+        };
+        
+        // Add a few buildings on load
+        for (let i = 0; i < 5; i++) {
+            addTestBuilding();
+        }
+    </script>
+</body>
+</html>

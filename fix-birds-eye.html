@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Bird's Eye View</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <style>
+        #debug-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #00ff88;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            max-width: 500px;
+            border-radius: 4px;
+        }
+        h3 { margin-top: 0; color: #00ff88; }
+        button { 
+            display: block;
+            width: 100%;
+            margin: 5px 0; 
+            padding: 10px; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #444; 
+            cursor: pointer; 
+        }
+        button:hover { background: #333; border-color: #00ff88; }
+        .log { 
+            background: #111; 
+            padding: 10px; 
+            margin: 10px 0; 
+            font-family: monospace; 
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Road Mapper - Fix Bird's Eye</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        <div class="canvas-container" id="svg-container"></div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    
+    <div id="debug-panel">
+        <h3>Bird's Eye Fix Panel</h3>
+        <button onclick="runDiagnostic()">Run Diagnostic</button>
+        <button onclick="applyFix()">Apply Fix</button>
+        <button onclick="testBirdsEye()">Test Bird's Eye</button>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function logMsg(msg, color = 'white') {
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.textContent = `[${new Date().toTimeString().slice(0,8)}] ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function runDiagnostic() {
+            log.innerHTML = '';
+            logMsg('=== Running Diagnostic ===', '#00ff88');
+            
+            if (!window.app) {
+                logMsg('ERROR: App not loaded', 'red');
+                return;
+            }
+            
+            // Check current zoom
+            const zoom = app.svgRenderer.viewport.zoom;
+            logMsg(`Current zoom: ${zoom.toFixed(3)} (${zoom < 0.2 ? 'BIRD\'S EYE' : 'Normal'})`, 'cyan');
+            
+            // Check circuit-glow filter
+            const filter = document.getElementById('circuit-glow');
+            if (filter) {
+                logMsg('✓ circuit-glow filter exists', '#00ff88');
+                const blur = filter.querySelector('feGaussianBlur');
+                if (blur) {
+                    logMsg(`  - Blur stdDeviation: ${blur.getAttribute('stdDeviation')}`, 'gray');
+                }
+            } else {
+                logMsg('✗ circuit-glow filter missing!', 'red');
+            }
+            
+            // Check roads
+            const roads = document.querySelectorAll('.road-path');
+            logMsg(`Found ${roads.length} road paths`, 'cyan');
+            
+            roads.forEach((road, i) => {
+                logMsg(`Road ${i}:`, 'yellow');
+                const stroke = road.getAttribute('stroke');
+                const width = road.getAttribute('stroke-width');
+                const opacity = road.getAttribute('opacity');
+                const filter = road.style.filter;
+                
+                logMsg(`  stroke: ${stroke}`, stroke === '#00ff88' ? '#00ff88' : 'gray');
+                logMsg(`  width: ${width}`, 'gray');
+                logMsg(`  opacity: ${opacity}`, 'gray');
+                logMsg(`  filter: ${filter}`, 'gray');
+                
+                // Check visibility
+                const computed = window.getComputedStyle(road);
+                logMsg(`  computed opacity: ${computed.opacity}`, 'gray');
+                logMsg(`  computed display: ${computed.display}`, 'gray');
+                
+                // Check bounding box
+                try {
+                    const bbox = road.getBBox();
+                    logMsg(`  bbox: ${bbox.width.toFixed(1)}×${bbox.height.toFixed(1)}`, 'gray');
+                } catch (e) {
+                    logMsg(`  bbox: error getting bounds`, 'red');
+                }
+            });
+            
+            // Check layer visibility
+            const groundLayer = document.getElementById('layer-ground');
+            if (groundLayer) {
+                const layerOpacity = window.getComputedStyle(groundLayer).opacity;
+                logMsg(`Ground layer opacity: ${layerOpacity}`, 'cyan');
+            }
+        }
+        
+        function applyFix() {
+            logMsg('=== Applying Fix ===', '#00ff88');
+            
+            // First ensure we have circuit-glow filter
+            let filter = document.getElementById('circuit-glow');
+            if (!filter) {
+                logMsg('Creating circuit-glow filter...', 'yellow');
+                const defs = document.querySelector('svg defs');
+                if (defs) {
+                    filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                    filter.setAttribute('id', 'circuit-glow');
+                    filter.setAttribute('width', '150%');
+                    filter.setAttribute('height', '150%');
+                    
+                    const blur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+                    blur.setAttribute('stdDeviation', '1.5');
+                    blur.setAttribute('result', 'coloredBlur');
+                    
+                    const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+                    const mergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    mergeNode1.setAttribute('in', 'coloredBlur');
+                    const mergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    mergeNode2.setAttribute('in', 'SourceGraphic');
+                    
+                    merge.appendChild(mergeNode1);
+                    merge.appendChild(mergeNode2);
+                    filter.appendChild(blur);
+                    filter.appendChild(merge);
+                    defs.appendChild(filter);
+                    
+                    logMsg('✓ Created circuit-glow filter', '#00ff88');
+                }
+            }
+            
+            // Now fix all roads
+            const roads = document.querySelectorAll('.road-path');
+            roads.forEach((road, i) => {
+                // Remove any existing inline styles that might interfere
+                road.style.display = '';
+                road.style.visibility = '';
+                road.style.opacity = '';
+                
+                // Apply bright green color with good contrast
+                road.setAttribute('stroke', '#00ff88');
+                road.setAttribute('stroke-width', '6'); // Make it thicker
+                road.setAttribute('opacity', '1');
+                road.setAttribute('stroke-opacity', '1');
+                road.setAttribute('fill', 'none');
+                
+                // Apply the glow filter
+                road.style.filter = 'url(#circuit-glow)';
+                
+                logMsg(`✓ Fixed road ${i}`, '#00ff88');
+            });
+            
+            // Also ensure parent groups are visible
+            document.querySelectorAll('.road-group, .road-surface').forEach(group => {
+                group.style.display = '';
+                group.style.visibility = '';
+                group.style.opacity = '';
+            });
+            
+            // Hide details that shouldn't show in bird's eye
+            document.querySelectorAll('.curbs, .sidewalks, .lane-markings, .shoulders').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            logMsg('✓ Fix applied!', '#00ff88');
+        }
+        
+        function testBirdsEye() {
+            logMsg('=== Testing Bird\'s Eye ===', '#00ff88');
+            
+            if (!window.app) {
+                logMsg('ERROR: App not loaded', 'red');
+                return;
+            }
+            
+            // Clear and create test roads
+            app.elementManager.clear();
+            logMsg('Cleared elements', 'gray');
+            
+            // Create a grid of roads
+            const roads = [
+                [{x: -200, y: -100}, {x: 200, y: -100}],
+                [{x: -200, y: 0}, {x: 200, y: 0}],
+                [{x: -200, y: 100}, {x: 200, y: 100}],
+                [{x: -100, y: -150}, {x: -100, y: 150}],
+                [{x: 0, y: -150}, {x: 0, y: 150}],
+                [{x: 100, y: -150}, {x: 100, y: 150}]
+            ];
+            
+            roads.forEach((points, i) => {
+                const road = app.elementManager.createRoad('STREET');
+                points.forEach(p => road.addPoint(p.x, p.y));
+                road.finalize();
+                app.elementManager.addRoad(road);
+            });
+            
+            logMsg(`Created ${roads.length} roads`, 'cyan');
+            
+            // Set to bird's eye view
+            setTimeout(() => {
+                logMsg('Switching to bird\'s eye view...', 'yellow');
+                app.svgRenderer.viewport.setZoom(0.13);
+                
+                // Apply fix after zoom
+                setTimeout(() => {
+                    applyFix();
+                }, 500);
+            }, 500);
+        }
+        
+        // Initialize after app loads
+        setTimeout(() => {
+            if (window.app) {
+                logMsg('App loaded and ready', '#00ff88');
+                logMsg('Use buttons above to diagnose and fix', 'cyan');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birds Eye Debug - Road Mapper</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        
+        #test-svg {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            margin: 20px 0;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        .info {
+            background: #1a1a1a;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .log {
+            background: #0f0f14;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+        }
+        
+        .log-entry.error {
+            color: #ff4444;
+        }
+        
+        .log-entry.success {
+            color: #00ff88;
+        }
+        
+        .log-entry.warning {
+            color: #ffb800;
+        }
+    </style>
+</head>
+<body>
+    <h1>Birds Eye View Debug</h1>
+    
+    <div class="info">
+        <p>This test creates different road types and tests the bird's eye view rendering.</p>
+        <p>All roads should appear as green (#00ff88) lines when in bird's eye mode.</p>
+    </div>
+    
+    <div class="controls">
+        <button onclick="testNormalView()">Normal View</button>
+        <button onclick="testBirdsEyeView()">Birds Eye View</button>
+        <button onclick="testDirectStyles()">Test Direct Styles</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <svg id="test-svg" width="800" height="600" viewBox="0 0 800 600">
+        <defs>
+            <filter id="circuit-glow" width="200%" height="200%" x="-50%" y="-50%">
+                <feColorMatrix type="matrix" values="0 0 0 0 0   0 1.5 0 0 0   0 0 0 0 0.5   0 0 0 1 0" result="brightened"/>
+                <feGaussianBlur in="brightened" stdDeviation="1" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        
+        <!-- Test roads -->
+        <g id="roads">
+            <!-- Highway -->
+            <g class="road-group" data-road-type="HIGHWAY">
+                <path class="road-path" d="M 100 100 L 300 100" 
+                      stroke="#2a2a3a" 
+                      stroke-width="40" 
+                      stroke-linecap="round" 
+                      fill="none"
+                      data-road-id="highway-1"/>
+                <text x="200" y="130" text-anchor="middle" fill="#666" font-size="12">Highway</text>
+            </g>
+            
+            <!-- Arterial -->
+            <g class="road-group" data-road-type="ARTERIAL">
+                <path class="road-path" d="M 400 100 L 600 100" 
+                      stroke="#2a2a3a" 
+                      stroke-width="32" 
+                      stroke-linecap="round" 
+                      fill="none"
+                      data-road-id="arterial-1"/>
+                <text x="500" y="130" text-anchor="middle" fill="#666" font-size="12">Arterial</text>
+            </g>
+            
+            <!-- Street -->
+            <g class="road-group" data-road-type="STREET">
+                <path class="road-path" d="M 100 200 L 300 200" 
+                      stroke="#2a2a3a" 
+                      stroke-width="24" 
+                      stroke-linecap="round" 
+                      fill="none"
+                      data-road-id="street-1"/>
+                <text x="200" y="230" text-anchor="middle" fill="#666" font-size="12">Street</text>
+            </g>
+            
+            <!-- Street 2 -->
+            <g class="road-group" data-road-type="STREET">
+                <path class="road-path" d="M 400 200 L 600 200" 
+                      stroke="#2a2a3a" 
+                      stroke-width="24" 
+                      stroke-linecap="round" 
+                      fill="none"
+                      data-road-id="street-2"/>
+                <text x="500" y="230" text-anchor="middle" fill="#666" font-size="12">Street 2</text>
+            </g>
+            
+            <!-- Service Road -->
+            <g class="road-group" data-road-type="SERVICE">
+                <path class="road-path" d="M 100 300 L 300 300" 
+                      stroke="#2a2a3a" 
+                      stroke-width="16" 
+                      stroke-linecap="round" 
+                      fill="none"
+                      data-road-id="service-1"/>
+                <text x="200" y="330" text-anchor="middle" fill="#666" font-size="12">Service</text>
+            </g>
+            
+            <!-- Complex Street Path -->
+            <g class="road-group" data-road-type="STREET">
+                <path class="road-path" d="M 100 400 L 200 400 L 200 500 L 300 500" 
+                      stroke="#2a2a3a" 
+                      stroke-width="24" 
+                      stroke-linecap="round" 
+                      stroke-linejoin="round"
+                      fill="none"
+                      data-road-id="street-complex"/>
+                <text x="200" y="530" text-anchor="middle" fill="#666" font-size="12">Complex Street</text>
+            </g>
+        </g>
+    </svg>
+    
+    <div class="log" id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+        }
+        
+        function testNormalView() {
+            addLog('Testing normal view...', 'info');
+            
+            const roads = document.querySelectorAll('.road-path');
+            roads.forEach(road => {
+                const type = road.parentElement.getAttribute('data-road-type');
+                road.setAttribute('stroke', '#2a2a3a');
+                road.style.filter = '';
+                road.style.opacity = '1';
+                addLog(`Reset ${road.getAttribute('data-road-id')} (${type}) to normal view`, 'success');
+            });
+        }
+        
+        function testBirdsEyeView() {
+            addLog('Testing birds eye view...', 'info');
+            
+            const roads = document.querySelectorAll('.road-path');
+            roads.forEach(road => {
+                const type = road.parentElement.getAttribute('data-road-type');
+                const id = road.getAttribute('data-road-id');
+                
+                // Apply bird's eye style
+                road.setAttribute('stroke', '#00ff88');
+                road.setAttribute('stroke-width', '8');
+                road.setAttribute('opacity', '1');
+                road.setAttribute('stroke-opacity', '1');
+                road.style.filter = 'url(#circuit-glow)';
+                road.style.display = '';
+                road.style.visibility = 'visible';
+                road.style.opacity = '1';
+                
+                // Log the current computed styles
+                const computedStyle = window.getComputedStyle(road);
+                addLog(`Applied bird's eye to ${id} (${type})`, 'success');
+                addLog(`  Computed stroke: ${computedStyle.stroke}`, 'info');
+                addLog(`  Computed opacity: ${computedStyle.opacity}`, 'info');
+                addLog(`  Computed display: ${computedStyle.display}`, 'info');
+                
+                // Check if the color was actually applied
+                if (road.getAttribute('stroke') === '#00ff88') {
+                    addLog(`  ✓ Green color correctly set`, 'success');
+                } else {
+                    addLog(`  ✗ Green color NOT set! Current: ${road.getAttribute('stroke')}`, 'error');
+                }
+            });
+        }
+        
+        function testDirectStyles() {
+            addLog('Testing direct inline styles...', 'warning');
+            
+            const roads = document.querySelectorAll('.road-path');
+            roads.forEach(road => {
+                const id = road.getAttribute('data-road-id');
+                
+                // Force inline styles
+                road.style.stroke = '#00ff88';
+                road.style.strokeWidth = '8';
+                road.style.opacity = '1';
+                road.style.strokeOpacity = '1';
+                road.style.filter = 'url(#circuit-glow)';
+                
+                addLog(`Forced inline styles on ${id}`, 'warning');
+                addLog(`  style.stroke: ${road.style.stroke}`, 'info');
+            });
+        }
+        
+        // Initial test
+        addLog('Page loaded. Click buttons to test different views.', 'info');
+    </script>
+</body>
+</html>

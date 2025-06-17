@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Bird's Eye Test</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <style>
+        #test-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #00ff88;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            max-width: 400px;
+            border-radius: 4px;
+        }
+        #test-panel h3 { margin-top: 0; color: #00ff88; }
+        .test-btn {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            cursor: pointer;
+        }
+        .test-btn:hover { background: #333; border-color: #00ff88; }
+        .log { 
+            background: #111; 
+            padding: 10px; 
+            margin: 10px 0; 
+            font-family: monospace; 
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Road Mapper - Quick Test</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        <div class="canvas-container" id="svg-container"></div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    
+    <div id="test-panel">
+        <h3>Bird's Eye Quick Test</h3>
+        <button class="test-btn" onclick="quickTest()">Run Quick Test</button>
+        <button class="test-btn" onclick="checkDOM()">Check DOM</button>
+        <button class="test-btn" onclick="manualFix()">Manual Fix</button>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        const logEl = document.getElementById('log');
+        
+        function log(msg) {
+            const time = new Date().toTimeString().split(' ')[0];
+            logEl.innerHTML += `[${time}] ${msg}<br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        window.quickTest = function() {
+            log('Starting quick test...');
+            
+            if (!window.app) {
+                log('ERROR: App not loaded');
+                return;
+            }
+            
+            // Clear and add roads
+            app.elementManager.clear();
+            log('Cleared elements');
+            
+            // Add simple cross roads
+            const road1 = app.elementManager.createRoad('STREET');
+            road1.addPoint(-200, 0);
+            road1.addPoint(200, 0);
+            road1.finalize();
+            app.elementManager.addRoad(road1);
+            
+            const road2 = app.elementManager.createRoad('STREET');
+            road2.addPoint(0, -150);
+            road2.addPoint(0, 150);
+            road2.finalize();
+            app.elementManager.addRoad(road2);
+            
+            log('Added 2 roads');
+            
+            // Wait a bit then zoom out
+            setTimeout(() => {
+                log('Setting zoom to 0.15 (bird\'s eye)');
+                app.svgRenderer.viewport.setZoom(0.15);
+                
+                // Check results after update
+                setTimeout(() => {
+                    checkDOM();
+                }, 500);
+            }, 500);
+        };
+        
+        window.checkDOM = function() {
+            log('=== Checking DOM ===');
+            
+            // Check zoom
+            const zoom = app?.svgRenderer?.viewport?.zoom;
+            log(`Current zoom: ${zoom} (${zoom < 0.2 ? 'BIRD\'S EYE' : 'Normal'})`);
+            
+            // Check background
+            const bg = document.getElementById('svg-container').style.backgroundColor;
+            log(`Container background: ${bg}`);
+            
+            // Check road paths
+            const roads = document.querySelectorAll('.road-path');
+            log(`Found ${roads.length} road paths`);
+            
+            roads.forEach((road, i) => {
+                const stroke = road.getAttribute('stroke');
+                const width = road.getAttribute('stroke-width');
+                const filter = road.style.filter;
+                log(`Road ${i}: stroke=${stroke}, width=${width}, filter=${filter}`);
+            });
+            
+            // Check if circuit-glow filter exists
+            const filter = document.getElementById('circuit-glow');
+            log(`circuit-glow filter exists: ${!!filter}`);
+        };
+        
+        window.manualFix = function() {
+            log('=== Applying manual fix ===');
+            
+            const roads = document.querySelectorAll('.road-path');
+            roads.forEach((road, i) => {
+                road.setAttribute('stroke', '#00ff88');
+                road.setAttribute('stroke-width', '3');
+                road.style.filter = 'url(#circuit-glow)';
+                log(`Fixed road ${i}`);
+            });
+            
+            // Also hide other elements
+            document.querySelectorAll('.curbs').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.sidewalks').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.lane-markings').forEach(el => el.style.display = 'none');
+            
+            log('Manual fix applied');
+        };
+        
+        // Auto-run test after load
+        setTimeout(() => {
+            if (window.app) {
+                log('App loaded, ready for testing');
+                log('Press B key for bird\'s eye view');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

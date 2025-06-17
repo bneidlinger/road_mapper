@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Roads</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <style>
+        #debug {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #00ff88;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            max-width: 500px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button { 
+            margin: 5px; 
+            padding: 5px 10px; 
+            background: #333; 
+            color: white; 
+            border: 1px solid #555; 
+            cursor: pointer; 
+        }
+        .log { 
+            background: #111; 
+            padding: 10px; 
+            margin: 10px 0; 
+            max-height: 400px; 
+            overflow-y: auto; 
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff6666; }
+        .warn { color: #ffaa66; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Road Mapper - Debug Roads</h1>
+        <div class="header-actions">
+            <button id="new-project" class="btn">New</button>
+            <button id="save-project" class="btn">Save</button>
+            <button id="load-project" class="btn">Load</button>
+            <button id="export-svg" class="btn">Export SVG</button>
+            <div style="margin-left: 1rem;">
+                <button id="toggle-grid" class="btn">Grid</button>
+                <button id="toggle-snap" class="btn">Snap</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="toolbar-container"></div>
+        <div class="canvas-container" id="svg-container"></div>
+    </main>
+
+    <footer id="status-bar-container"></footer>
+    
+    <div id="debug">
+        <h3 style="margin-top: 0; color: #00ff88;">Road Debug Panel</h3>
+        <div>
+            <button onclick="addTestRoad()">Add Test Road</button>
+            <button onclick="setBirdsEye()">Set Bird's Eye</button>
+            <button onclick="setNormal()">Set Normal</button>
+            <button onclick="inspectRoads()">Inspect Roads</button>
+            <button onclick="fixVisibility()">Fix Visibility</button>
+        </div>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function logMsg(msg, type = '') {
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${new Date().toTimeString().slice(0,8)}] ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function addTestRoad() {
+            if (!window.app) {
+                logMsg('App not ready', 'error');
+                return;
+            }
+            
+            const road = app.elementManager.createRoad('STREET');
+            road.addPoint(-200, 0);
+            road.addPoint(200, 0);
+            road.finalize();
+            app.elementManager.addRoad(road);
+            
+            logMsg('Added test road', 'success');
+        }
+        
+        function setBirdsEye() {
+            if (!window.app) return;
+            app.svgRenderer.viewport.setZoom(0.15);
+            logMsg('Set zoom to 0.15 (bird\'s eye)', 'success');
+            
+            setTimeout(inspectRoads, 500);
+        }
+        
+        function setNormal() {
+            if (!window.app) return;
+            app.svgRenderer.viewport.setZoom(1);
+            logMsg('Set zoom to 1 (normal)', 'success');
+        }
+        
+        function inspectRoads() {
+            logMsg('=== Inspecting Roads ===', 'warn');
+            
+            // Check SVG elements map
+            const svgElements = app.svgRenderer.svgElements;
+            logMsg(`SVG Elements Map size: ${svgElements.size}`);
+            
+            // Check each element
+            svgElements.forEach((element, id) => {
+                if (element.constructor.name === 'SVGRoadElement') {
+                    logMsg(`Road ${id}:`);
+                    logMsg(`  - Has mainPath: ${!!element.mainPath}`);
+                    logMsg(`  - Has group: ${!!element.group}`);
+                    
+                    if (element.group) {
+                        // Check DOM structure
+                        const roadPath = element.group.querySelector('.road-path');
+                        logMsg(`  - DOM .road-path found: ${!!roadPath}`);
+                        
+                        if (roadPath) {
+                            const stroke = roadPath.getAttribute('stroke');
+                            const width = roadPath.getAttribute('stroke-width');
+                            const opacity = roadPath.getAttribute('opacity');
+                            const filter = roadPath.style.filter;
+                            const display = roadPath.style.display;
+                            const parentDisplay = roadPath.parentElement?.style.display;
+                            
+                            logMsg(`  - stroke: ${stroke}`);
+                            logMsg(`  - stroke-width: ${width}`);
+                            logMsg(`  - opacity: ${opacity}`);
+                            logMsg(`  - filter: ${filter}`);
+                            logMsg(`  - display: ${display || 'default'}`);
+                            logMsg(`  - parent display: ${parentDisplay || 'default'}`);
+                            
+                            // Check computed style
+                            const computed = window.getComputedStyle(roadPath);
+                            logMsg(`  - computed visibility: ${computed.visibility}`);
+                            logMsg(`  - computed display: ${computed.display}`);
+                            logMsg(`  - computed opacity: ${computed.opacity}`);
+                        }
+                        
+                        // Check parent groups
+                        const roadGroup = element.group.querySelector('.road-group');
+                        const surfaceGroup = element.group.querySelector('.road-surface');
+                        logMsg(`  - Has .road-group: ${!!roadGroup}`);
+                        logMsg(`  - Has .road-surface: ${!!surfaceGroup}`);
+                        
+                        if (surfaceGroup) {
+                            logMsg(`  - Surface display: ${surfaceGroup.style.display || 'default'}`);
+                        }
+                    }
+                }
+            });
+            
+            // Check DOM directly
+            logMsg('=== DOM Check ===', 'warn');
+            const allRoadPaths = document.querySelectorAll('.road-path');
+            logMsg(`Total .road-path elements in DOM: ${allRoadPaths.length}`);
+            
+            allRoadPaths.forEach((path, i) => {
+                const bbox = path.getBBox();
+                logMsg(`DOM Road ${i}: bbox=${bbox.width}x${bbox.height}`);
+            });
+        }
+        
+        function fixVisibility() {
+            logMsg('=== Attempting to fix visibility ===', 'warn');
+            
+            // Try multiple approaches
+            const allRoadPaths = document.querySelectorAll('.road-path');
+            allRoadPaths.forEach((path, i) => {
+                // Ensure it's visible
+                path.style.display = '';
+                path.style.visibility = 'visible';
+                path.style.opacity = '1';
+                
+                // Apply bird's eye style
+                if (app.svgRenderer.viewport.zoom < 0.2) {
+                    path.setAttribute('stroke', '#00ff88');
+                    path.setAttribute('stroke-width', '3');
+                    path.style.filter = 'url(#circuit-glow)';
+                    logMsg(`Fixed road ${i} to bird's eye style`, 'success');
+                } else {
+                    logMsg(`Fixed road ${i} visibility`, 'success');
+                }
+            });
+            
+            // Also check parent groups
+            document.querySelectorAll('.road-group, .road-surface').forEach(group => {
+                group.style.display = '';
+                group.style.visibility = 'visible';
+            });
+        }
+        
+        // Initialize
+        setTimeout(() => {
+            if (window.app) {
+                logMsg('App loaded and ready', 'success');
+                
+                // Add a test road and set to bird's eye
+                addTestRoad();
+                
+                const road2 = app.elementManager.createRoad('STREET');
+                road2.addPoint(0, -150);
+                road2.addPoint(0, 150);
+                road2.finalize();
+                app.elementManager.addRoad(road2);
+                
+                setTimeout(() => {
+                    setBirdsEye();
+                }, 1000);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

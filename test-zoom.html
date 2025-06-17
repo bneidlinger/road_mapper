@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoom Test - Road Mapper</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #controls {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border: 1px solid #333;
+        }
+        #svg-container {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #333;
+            position: relative;
+            background: #0a0a0a;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="setZoom(0.1)">Bird's Eye (0.1x)</button>
+        <button onclick="setZoom(0.2)">Threshold (0.2x)</button>
+        <button onclick="setZoom(0.5)">Far (0.5x)</button>
+        <button onclick="setZoom(1)">Normal (1x)</button>
+        <button onclick="setZoom(2)">Close (2x)</button>
+        <button onclick="addTestElements()">Add Test Elements</button>
+    </div>
+    
+    <div id="svg-container"></div>
+    
+    <div id="info">
+        <div>Zoom: <span id="zoom-level">1</span></div>
+        <div>Mode: <span id="view-mode">Normal</span></div>
+    </div>
+
+    <script type="module">
+        import { SVGManager } from './src/modules/svg/SVGManager.js';
+        import { SVGViewport } from './src/modules/svg/SVGViewport.js';
+        import { SVGRoadElement } from './src/modules/svg/elements/SVGRoadElement.js';
+        import { SVGIntersectionElement } from './src/modules/svg/elements/SVGIntersectionElement.js';
+        
+        // Initialize SVG
+        const svgManager = new SVGManager('svg-container');
+        const viewport = new SVGViewport(svgManager);
+        
+        // Create filters
+        const circuitGlow = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+        circuitGlow.setAttribute('id', 'circuit-glow');
+        
+        const circuitBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+        circuitBlur.setAttribute('stdDeviation', '2');
+        circuitBlur.setAttribute('result', 'coloredBlur');
+        
+        const circuitMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+        const circuitMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+        circuitMergeNode1.setAttribute('in', 'coloredBlur');
+        const circuitMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+        circuitMergeNode2.setAttribute('in', 'SourceGraphic');
+        
+        circuitMerge.appendChild(circuitMergeNode1);
+        circuitMerge.appendChild(circuitMergeNode2);
+        circuitGlow.appendChild(circuitBlur);
+        circuitGlow.appendChild(circuitMerge);
+        
+        svgManager.addDef(circuitGlow);
+        
+        // Test elements storage
+        let testRoad = null;
+        let testIntersection = null;
+        
+        // Make functions global
+        window.setZoom = function(zoom) {
+            viewport.zoom = zoom;
+            viewport.emit('change');
+            
+            document.getElementById('zoom-level').textContent = zoom;
+            document.getElementById('view-mode').textContent = zoom < 0.2 ? 'Bird\'s Eye' : 'Normal';
+            
+            // Update background based on zoom
+            const container = document.getElementById('svg-container');
+            if (zoom < 0.2) {
+                container.style.backgroundColor = '#0a0a0a';
+            } else {
+                container.style.backgroundColor = '#1a1a1a';
+            }
+            
+            // Update elements
+            if (testRoad) {
+                testRoad.updateDetailLevel(zoom);
+            }
+            if (testIntersection) {
+                testIntersection.updateDetailLevel(zoom);
+            }
+            
+            console.log('Zoom set to:', zoom, 'Bird\'s eye:', zoom < 0.2);
+        };
+        
+        window.addTestElements = function() {
+            // Clear existing
+            svgManager.clearLayer('ground');
+            
+            // Create a mock road
+            const mockRoad = {
+                id: 'test-road-1',
+                type: 'STREET',
+                points: [
+                    { x: 100, y: 300 },
+                    { x: 700, y: 300 }
+                ],
+                properties: {
+                    width: 20,
+                    lanes: 2,
+                    laneWidth: 10,
+                    sidewalkWidth: 0,
+                    shoulderWidth: 0
+                }
+            };
+            
+            testRoad = new SVGRoadElement(mockRoad);
+            const roadElement = testRoad.createElement(svgManager);
+            svgManager.addToLayer('ground', roadElement);
+            
+            // Create a mock intersection
+            const mockIntersection = {
+                id: 'test-intersection-1',
+                x: 400,
+                y: 300,
+                connectedRoads: [{ roadId: 'test-road-1' }],
+                selected: false
+            };
+            
+            // Mock element manager
+            const mockElementManager = {
+                getRoads: () => [mockRoad]
+            };
+            
+            testIntersection = new SVGIntersectionElement(mockIntersection, viewport, mockElementManager);
+            svgManager.addToLayer('ground', testIntersection.element);
+            
+            // Apply current zoom
+            const currentZoom = viewport.zoom;
+            testRoad.updateDetailLevel(currentZoom);
+            testIntersection.updateDetailLevel(currentZoom);
+        };
+        
+        // Initialize with test elements
+        window.addTestElements();
+    </script>
+</body>
+</html>
