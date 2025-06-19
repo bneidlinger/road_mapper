@@ -171,7 +171,8 @@ export class RoadTool extends BaseTool {
         const screenFirst = this.viewport.worldToScreen(firstPoint.x, firstPoint.y);
         
         ctx.save();
-        ctx.strokeStyle = 'rgba(102, 102, 102, 0.8)';
+        // Use a darker color similar to the final road color to prevent brightness
+        ctx.strokeStyle = 'rgba(42, 42, 58, 0.9)'; // Similar to ROAD_COLORS.asphalt
         ctx.lineWidth = this.currentRoad.properties.width;
         ctx.setLineDash([5, 5]);
         ctx.beginPath();
@@ -222,7 +223,8 @@ export class RoadTool extends BaseTool {
       }
       
       path.setAttribute('d', d);
-      path.setAttribute('stroke', 'rgba(102, 102, 102, 0.8)');
+      // Use a darker color similar to the final road color to prevent brightness
+      path.setAttribute('stroke', 'rgba(42, 42, 58, 0.9)'); // Similar to ROAD_COLORS.asphalt
       path.setAttribute('stroke-width', this.currentRoad.properties.width);
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-dasharray', '5 5');

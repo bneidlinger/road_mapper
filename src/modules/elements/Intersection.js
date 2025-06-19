@@ -9,7 +9,7 @@ export class Intersection {
     this.radius = 25; // Increased for easier selection
     this.selected = false;
     this.type = 'standard'; // standard, roundabout, traffic_light
-    this.controlType = 'stop_sign'; // 'none', 'stop_sign', 'traffic_light', 'yield'
+    this.controlType = 'none'; // 'none', 'stop_sign', 'traffic_light', 'yield'
     this.stopSignConfig = {
       count: 4, // number of stop signs (2, 3, or 4 way)
       positions: [] // which approaches have stop signs

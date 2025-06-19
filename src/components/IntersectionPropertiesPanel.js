@@ -4,6 +4,7 @@ export class IntersectionPropertiesPanel {
     this.container = null;
     this.currentIntersection = null;
     this.isVisible = false;
+    this.pendingChanges = null;
   }
 
   mount(containerId) {
@@ -18,6 +19,7 @@ export class IntersectionPropertiesPanel {
     this.render();
     console.log('Container after render:', this.container.innerHTML.substring(0, 200) + '...');
     this.bindEvents();
+    this.setupElementManagerListeners();
     // Don't hide initially - let it be controlled by selection events
     // this.hide();
     this.container.style.display = 'none'; // Just hide it without clearing content
@@ -144,6 +146,37 @@ export class IntersectionPropertiesPanel {
             </div>
           </div>
         </div>
+        
+        <div class="properties-footer" style="
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          border-top: 1px solid #2a2a3a;
+          background: #1a1a23;
+        ">
+          <button class="btn btn-primary" id="apply-changes" style="
+            flex: 1;
+            background: #00d4ff;
+            color: #0f0f14;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+          ">Apply</button>
+          <button class="btn btn-secondary" id="cancel-changes" style="
+            flex: 1;
+            background: #2a2a3a;
+            color: #e8e8ec;
+            border: 1px solid #3a3a4a;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">Cancel</button>
+        </div>
       </div>
     `;
   }
@@ -153,21 +186,28 @@ export class IntersectionPropertiesPanel {
     const closeBtn = this.container.querySelector('#close-properties');
     closeBtn.addEventListener('click', () => this.hide());
 
+    // Apply button
+    const applyBtn = this.container.querySelector('#apply-changes');
+    applyBtn.addEventListener('click', () => this.applyChanges());
+
+    // Cancel button
+    const cancelBtn = this.container.querySelector('#cancel-changes');
+    cancelBtn.addEventListener('click', () => this.cancelChanges());
+
     // Control type buttons
     this.container.querySelectorAll('.control-type-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
-        this.setControlType(type);
+        this.setPendingControlType(type);
       });
     });
 
     // Stop sign configuration
     this.container.querySelectorAll('input[name="stop-count"]').forEach(input => {
       input.addEventListener('change', (e) => {
-        if (this.currentIntersection) {
-          this.currentIntersection.stopSignConfig.count = parseInt(e.target.value);
+        if (this.pendingChanges) {
+          this.pendingChanges.stopSignConfig.count = parseInt(e.target.value);
           this.updateStopPositionSelector();
-          this.elementManager.emit('elementUpdated', this.currentIntersection);
         }
       });
     });
@@ -177,19 +217,19 @@ export class IntersectionPropertiesPanel {
     const cycleInput = this.container.querySelector('#traffic-cycle');
     
     timingSelect.addEventListener('change', (e) => {
-      if (this.currentIntersection) {
-        this.currentIntersection.trafficLightConfig.timing = e.target.value;
-        this.elementManager.emit('elementUpdated', this.currentIntersection);
+      if (this.pendingChanges) {
+        this.pendingChanges.trafficLightConfig.timing = e.target.value;
       }
     });
 
     cycleInput.addEventListener('change', (e) => {
-      if (this.currentIntersection) {
-        this.currentIntersection.trafficLightConfig.cycle = parseInt(e.target.value);
-        this.elementManager.emit('elementUpdated', this.currentIntersection);
+      if (this.pendingChanges) {
+        this.pendingChanges.trafficLightConfig.cycle = parseInt(e.target.value);
       }
     });
-
+  }
+  
+  setupElementManagerListeners() {
     // Listen for selection events
     this.elementManager.on('elementSelected', (element) => {
       console.log('IntersectionPropertiesPanel: elementSelected event received', element);
@@ -208,10 +248,42 @@ export class IntersectionPropertiesPanel {
     });
   }
 
-  setControlType(type) {
-    if (!this.currentIntersection) return;
+  applyChanges() {
+    if (!this.pendingChanges || !this.currentIntersection) return;
+    
+    console.log('Applying changes:', this.pendingChanges);
+    
+    // Apply all pending changes to the actual intersection
+    this.currentIntersection.controlType = this.pendingChanges.controlType;
+    this.currentIntersection.stopSignConfig = { 
+      count: this.pendingChanges.stopSignConfig.count,
+      positions: [...this.pendingChanges.stopSignConfig.positions]
+    };
+    this.currentIntersection.trafficLightConfig = { ...this.pendingChanges.trafficLightConfig };
+    
+    console.log('Updated intersection:', this.currentIntersection);
+    
+    // Store reference before hiding (which clears currentIntersection)
+    const intersectionToUpdate = this.currentIntersection;
+    
+    // Close the panel first
+    this.hide();
+    
+    // Emit update event after a small delay to ensure DOM updates
+    setTimeout(() => {
+      this.elementManager.emit('elementUpdated', intersectionToUpdate);
+    }, 10);
+  }
+  
+  cancelChanges() {
+    // Discard pending changes and close
+    this.hide();
+  }
 
-    this.currentIntersection.controlType = type;
+  setPendingControlType(type) {
+    if (!this.pendingChanges) return;
+
+    this.pendingChanges.controlType = type;
     
     // Update UI
     this.container.querySelectorAll('.control-type-btn').forEach(btn => {
@@ -228,8 +300,6 @@ export class IntersectionPropertiesPanel {
     if (type === 'stop_sign') {
       this.updateStopPositionSelector();
     }
-
-    this.elementManager.emit('elementUpdated', this.currentIntersection);
   }
 
   updateStopPositionSelector() {
@@ -281,7 +351,7 @@ export class IntersectionPropertiesPanel {
       stopCircle.setAttribute('cy', stopY);
       stopCircle.setAttribute('r', '8');
       
-      const hasStopSign = this.currentIntersection.stopSignConfig.positions.includes(index);
+      const hasStopSign = this.pendingChanges.stopSignConfig.positions.includes(index);
       stopCircle.setAttribute('fill', hasStopSign ? '#ff4444' : '#333');
       stopCircle.setAttribute('stroke', '#fff');
       stopCircle.setAttribute('stroke-width', '2');
@@ -298,9 +368,9 @@ export class IntersectionPropertiesPanel {
   }
 
   toggleStopPosition(index) {
-    if (!this.currentIntersection) return;
+    if (!this.pendingChanges) return;
     
-    const positions = this.currentIntersection.stopSignConfig.positions;
+    const positions = this.pendingChanges.stopSignConfig.positions;
     const idx = positions.indexOf(index);
     
     if (idx >= 0) {
@@ -310,7 +380,6 @@ export class IntersectionPropertiesPanel {
     }
     
     this.updateStopPositionSelector();
-    this.elementManager.emit('elementUpdated', this.currentIntersection);
   }
 
   getConnectionAngles() {
@@ -379,28 +448,41 @@ export class IntersectionPropertiesPanel {
     this.currentIntersection = intersection;
     this.isVisible = true;
     
+    // Create a copy of the intersection's properties for pending changes
+    this.pendingChanges = {
+      controlType: intersection.controlType,
+      stopSignConfig: { 
+        count: intersection.stopSignConfig.count,
+        positions: [...intersection.stopSignConfig.positions] 
+      },
+      trafficLightConfig: { ...intersection.trafficLightConfig }
+    };
+    
     // First check if we have rendered content
     console.log('Container innerHTML length:', this.container.innerHTML.length);
     console.log('Container childNodes:', this.container.childNodes.length);
     
-    // If no content, render it
-    if (this.container.childNodes.length === 0) {
-      console.log('No content in container, rendering now');
-      this.render();
-      this.bindEvents();
+    // Find the panel element
+    const panel = this.container.querySelector('.intersection-properties');
+    
+    if (!panel) {
+      console.log('No panel found, skipping display');
+      return;
     }
     
-    // Apply styles directly to container
+    // Show the container
     this.container.style.display = 'block';
-    this.container.style.position = 'fixed';
-    this.container.style.right = '20px';
-    this.container.style.top = '100px';
-    this.container.style.zIndex = '10000';
+    
+    // Force the panel to be visible by adding inline styles
+    panel.style.display = 'block';
+    panel.style.position = 'fixed';
+    panel.style.right = '20px';
+    panel.style.top = '100px';
+    panel.style.zIndex = '10000';
     
     console.log('IntersectionPropertiesPanel: container display set to block');
-    
-    // Debug: Check if container and panel are in DOM
-    const panel = this.container.querySelector('.properties-panel');
+    console.log('Panel computed style display:', window.getComputedStyle(panel).display);
+    console.log('Panel offsetHeight:', panel.offsetHeight);
     console.log('Container element:', this.container);
     console.log('Container id:', this.container.id);
     console.log('Container display:', window.getComputedStyle(this.container).display);
@@ -468,6 +550,7 @@ export class IntersectionPropertiesPanel {
     this.isVisible = false;
     this.container.style.display = 'none';
     this.currentIntersection = null;
+    this.pendingChanges = null;
   }
   
   // Temporary method to force show the panel

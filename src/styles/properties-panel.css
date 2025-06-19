@@ -257,3 +257,44 @@ input[readonly] {
 .connected-roads::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* Footer buttons */
+.properties-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.properties-footer .btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.properties-footer .btn-primary {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border: none;
+}
+
+.properties-footer .btn-primary:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.properties-footer .btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.properties-footer .btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-secondary);
+}

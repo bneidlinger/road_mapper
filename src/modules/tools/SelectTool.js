@@ -35,18 +35,16 @@ export class SelectTool extends BaseTool {
       const dx = worldPos.x - this.dragStart.x;
       const dy = worldPos.y - this.dragStart.y;
       
+      // Only allow moving roads, not intersections
       if (this.selectedElement.points) { // Road
         for (const point of this.selectedElement.points) {
           point.x += dx;
           point.y += dy;
         }
-      } else if (this.selectedElement.x !== undefined) { // Intersection
-        this.selectedElement.x += dx;
-        this.selectedElement.y += dy;
+        this.dragStart = { x: worldPos.x, y: worldPos.y };
+        this.toolManager.emit('redraw');
       }
-      
-      this.dragStart = { x: worldPos.x, y: worldPos.y };
-      this.toolManager.emit('redraw');
+      // Intersections cannot be moved - they are fixed at road connections
     } else {
       const element = this.elementManager.getElementAt(worldPos.x, worldPos.y);
       this.toolManager.canvas.style.cursor = element ? 'pointer' : 'default';

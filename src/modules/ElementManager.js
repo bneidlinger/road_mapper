@@ -12,8 +12,17 @@ export class ElementManager extends EventEmitter {
     
     // Listen for updates from properties panel
     this.on('elementUpdated', (element) => {
-      // Trigger a re-render when element properties change
-      this.emit('elementsChanged');
+      // Trigger appropriate update event based on element type
+      if (element.connectedRoads !== undefined) {
+        // It's an intersection
+        this.emit('intersectionUpdated', element);
+      } else if (element.points !== undefined) {
+        // It's a road
+        this.emit('roadUpdated', element);
+      } else if (element.width !== undefined && element.height !== undefined) {
+        // It's a building
+        this.emit('buildingUpdated', element);
+      }
     });
   }
 

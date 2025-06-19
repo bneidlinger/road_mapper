@@ -138,8 +138,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
   addStopSigns(connections, roadWidth) {
     // Add stop signs based on configuration
     connections.forEach((conn, index) => {
-      if (this.intersection.stopSignConfig.positions.includes(index) || 
-          this.intersection.stopSignConfig.count === connections.length) {
+      // Only add stop sign if this specific position is configured
+      if (this.intersection.stopSignConfig.positions.includes(index)) {
         const stopSign = this.controlsRenderer.createStopSign(
           this.intersection, 
           conn.angle, 

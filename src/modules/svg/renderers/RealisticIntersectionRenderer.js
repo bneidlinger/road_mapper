@@ -1,9 +1,10 @@
 export class RealisticIntersectionRenderer {
   constructor() {
-    this.pavementColor = '#4a4a4a';
-    this.pavementBorderColor = '#3a3a3a';
-    this.curbColor = '#666666';
-    this.cornerRadius = 8; // Radius for rounded corners
+    this.pavementColor = '#3d3d4e';
+    this.pavementBorderColor = '#2a2a3a';
+    this.curbColor = '#4a4a5a';
+    this.cornerRadius = 12; // Radius for rounded corners
+    this.shadowColor = 'rgba(0, 0, 0, 0.3)';
   }
 
   /**
@@ -31,49 +32,56 @@ export class RealisticIntersectionRenderer {
       elements.push(...markings);
     }
     
-    // Add a debug circle to show the actual hit test area
-    const debugCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    debugCircle.setAttribute('cx', intersection.x);
-    debugCircle.setAttribute('cy', intersection.y);
-    debugCircle.setAttribute('r', intersection.radius);
-    debugCircle.setAttribute('fill', 'rgba(255,0,0,0.3)');
-    debugCircle.setAttribute('stroke', 'red');
-    debugCircle.setAttribute('stroke-width', '3');
-    debugCircle.setAttribute('stroke-dasharray', '5,5');
-    elements.push(debugCircle);
-    
-    // Add center crosshair
-    const crosshairSize = 10;
-    const crosshairH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    crosshairH.setAttribute('x1', intersection.x - crosshairSize);
-    crosshairH.setAttribute('y1', intersection.y);
-    crosshairH.setAttribute('x2', intersection.x + crosshairSize);
-    crosshairH.setAttribute('y2', intersection.y);
-    crosshairH.setAttribute('stroke', 'red');
-    crosshairH.setAttribute('stroke-width', '2');
-    elements.push(crosshairH);
-    
-    const crosshairV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    crosshairV.setAttribute('x1', intersection.x);
-    crosshairV.setAttribute('y1', intersection.y - crosshairSize);
-    crosshairV.setAttribute('x2', intersection.x);
-    crosshairV.setAttribute('y2', intersection.y + crosshairSize);
-    crosshairV.setAttribute('stroke', 'red');
-    crosshairV.setAttribute('stroke-width', '2');
-    elements.push(crosshairV);
-    
-    // Add text showing coordinates
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', intersection.x);
-    text.setAttribute('y', intersection.y - intersection.radius - 5);
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', 'red');
-    text.setAttribute('font-size', '12');
-    text.setAttribute('font-weight', 'bold');
-    text.textContent = `(${intersection.x}, ${intersection.y})`;
-    elements.push(text);
     
     return elements;
+  }
+  
+  /**
+   * Ensures shadow filter exists in the SVG
+   */
+  ensureShadowFilter() {
+    const svg = document.querySelector('svg');
+    if (!svg) return;
+    
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    
+    // Check if shadow filter already exists
+    if (!defs.querySelector('#intersection-shadow')) {
+      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filter.setAttribute('id', 'intersection-shadow');
+      filter.setAttribute('x', '-50%');
+      filter.setAttribute('y', '-50%');
+      filter.setAttribute('width', '200%');
+      filter.setAttribute('height', '200%');
+      
+      const blur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      blur.setAttribute('in', 'SourceAlpha');
+      blur.setAttribute('stdDeviation', '3');
+      
+      const offset = document.createElementNS('http://www.w3.org/2000/svg', 'feOffset');
+      offset.setAttribute('dx', '2');
+      offset.setAttribute('dy', '2');
+      offset.setAttribute('result', 'offsetblur');
+      
+      const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const mergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      mergeNode1.setAttribute('in', 'offsetblur');
+      const mergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      mergeNode2.setAttribute('in', 'SourceGraphic');
+      
+      merge.appendChild(mergeNode1);
+      merge.appendChild(mergeNode2);
+      
+      filter.appendChild(blur);
+      filter.appendChild(offset);
+      filter.appendChild(merge);
+      
+      defs.appendChild(filter);
+    }
   }
 
   /**
@@ -85,14 +93,15 @@ export class RealisticIntersectionRenderer {
     
     // Calculate the convex hull of road edges to create a natural shape
     const points = this.calculateIntersectionShape(center, connections, roadWidth);
+    const pathData = this.createSmoothPath(points);
     
     // Create the main pavement polygon
     const pavement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const pathData = this.createSmoothPath(points);
     pavement.setAttribute('d', pathData);
     pavement.setAttribute('fill', this.pavementColor);
     pavement.setAttribute('stroke', this.pavementBorderColor);
-    pavement.setAttribute('stroke-width', '0.5');
+    pavement.setAttribute('stroke-width', '1');
+    pavement.setAttribute('stroke-opacity', '0.5');
     pavement.setAttribute('class', 'intersection-pavement');
     
     elements.push(pavement);
@@ -249,6 +258,7 @@ export class RealisticIntersectionRenderer {
     
     path.setAttribute('d', d);
     path.setAttribute('fill', this.curbColor);
+    path.setAttribute('fill-opacity', '0.4');
     path.setAttribute('class', 'intersection-curb');
     
     return path;
@@ -267,12 +277,14 @@ export class RealisticIntersectionRenderer {
       // Add stop line
       if (intersection.controlType === 'stop_sign' && 
           intersection.stopSignConfig.positions.includes(index)) {
+        console.log('Creating stop line for position', index, 'angle:', angle * 180 / Math.PI);
         const stopLine = this.createStopLine(center, angle, roadWidth);
         elements.push(stopLine);
       }
       
-      // Add crosswalk for major intersections
-      if (connections.length >= 4 && intersection.controlType !== 'none') {
+      // Add crosswalk for major intersections (traffic lights only for now)
+      if (connections.length >= 4 && intersection.controlType === 'traffic_light') {
+        console.log('Creating crosswalk for angle:', angle * 180 / Math.PI);
         const crosswalk = this.createCrosswalk(center, angle, roadWidth);
         elements.push(...crosswalk);
       }
@@ -285,13 +297,16 @@ export class RealisticIntersectionRenderer {
    * Creates a stop line marking
    */
   createStopLine(center, angle, roadWidth) {
-    const distance = roadWidth * 0.8;
-    const lineWidth = roadWidth * 0.8;
+    // Reverse the angle to place stop line on the approach side
+    const approachAngle = angle + Math.PI;
+    const distance = roadWidth * 0.9;
+    const lineWidth = roadWidth * 0.75;
+    // Use the original angle for perpendicular calculation
     const perpAngle = angle + Math.PI / 2;
     
     const lineCenter = {
-      x: center.x + Math.cos(angle) * distance,
-      y: center.y + Math.sin(angle) * distance
+      x: center.x + Math.cos(approachAngle) * distance,
+      y: center.y + Math.sin(approachAngle) * distance
     };
     
     const start = {
@@ -309,9 +324,10 @@ export class RealisticIntersectionRenderer {
     line.setAttribute('y1', start.y);
     line.setAttribute('x2', end.x);
     line.setAttribute('y2', end.y);
-    line.setAttribute('stroke', 'white');
-    line.setAttribute('stroke-width', '3');
-    line.setAttribute('opacity', '0.8');
+    line.setAttribute('stroke', '#f0f0f0');
+    line.setAttribute('stroke-width', '4');
+    line.setAttribute('opacity', '0.9');
+    line.setAttribute('stroke-linecap', 'square');
     line.setAttribute('class', 'stop-line');
     
     return line;
@@ -322,34 +338,41 @@ export class RealisticIntersectionRenderer {
    */
   createCrosswalk(center, angle, roadWidth) {
     const elements = [];
+    // Use approach angle for crosswalk placement
+    const approachAngle = angle + Math.PI;
     const distance = roadWidth * 1.2;
-    const stripeWidth = 3;
-    const stripeLength = roadWidth * 0.8;
-    const stripeSpacing = 4;
-    const numStripes = Math.floor(roadWidth / (stripeWidth + stripeSpacing));
+    const stripeWidth = 2;
+    const stripeLength = 12; // Fixed length for crosswalk stripes
+    const stripeSpacing = 3;
+    const crosswalkWidth = roadWidth * 0.8;
+    const numStripes = Math.floor(stripeLength / (stripeWidth + stripeSpacing));
     
+    // Use original angle for perpendicular calculation
     const perpAngle = angle + Math.PI / 2;
     const crosswalkCenter = {
-      x: center.x + Math.cos(angle) * distance,
-      y: center.y + Math.sin(angle) * distance
+      x: center.x + Math.cos(approachAngle) * distance,
+      y: center.y + Math.sin(approachAngle) * distance
     };
     
     for (let i = 0; i < numStripes; i++) {
       const offset = (i - numStripes / 2) * (stripeWidth + stripeSpacing);
       
+      // Position along the road direction
       const stripeStart = {
-        x: crosswalkCenter.x + Math.cos(perpAngle) * offset,
-        y: crosswalkCenter.y + Math.sin(perpAngle) * offset
+        x: crosswalkCenter.x + Math.cos(angle) * offset,
+        y: crosswalkCenter.y + Math.sin(angle) * offset
       };
       
       const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      stripe.setAttribute('x1', stripeStart.x - Math.cos(angle) * stripeLength / 2);
-      stripe.setAttribute('y1', stripeStart.y - Math.sin(angle) * stripeLength / 2);
-      stripe.setAttribute('x2', stripeStart.x + Math.cos(angle) * stripeLength / 2);
-      stripe.setAttribute('y2', stripeStart.y + Math.sin(angle) * stripeLength / 2);
-      stripe.setAttribute('stroke', 'white');
+      // Stripes run perpendicular to the road (across it)
+      stripe.setAttribute('x1', stripeStart.x - Math.cos(perpAngle) * crosswalkWidth / 2);
+      stripe.setAttribute('y1', stripeStart.y - Math.sin(perpAngle) * crosswalkWidth / 2);
+      stripe.setAttribute('x2', stripeStart.x + Math.cos(perpAngle) * crosswalkWidth / 2);
+      stripe.setAttribute('y2', stripeStart.y + Math.sin(perpAngle) * crosswalkWidth / 2);
+      stripe.setAttribute('stroke', '#e0e0e0');
       stripe.setAttribute('stroke-width', stripeWidth);
-      stripe.setAttribute('opacity', '0.7');
+      stripe.setAttribute('opacity', '0.8');
+      stripe.setAttribute('stroke-linecap', 'square');
       stripe.setAttribute('class', 'crosswalk-stripe');
       
       elements.push(stripe);

@@ -2,12 +2,12 @@ export class RealisticControlsRenderer {
   constructor() {
     // Stop sign colors and dimensions
     this.stopSign = {
-      postColor: '#808080',
-      signColor: '#dd0000',
+      postColor: '#707080',
+      signColor: '#cc0000',
       textColor: '#ffffff',
-      size: 8, // Sign size
-      postHeight: 20,
-      postWidth: 2
+      size: 6, // Sign size
+      postHeight: 16,
+      postWidth: 1.5
     };
     
     // Traffic light colors and dimensions
@@ -44,13 +44,16 @@ export class RealisticControlsRenderer {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', 'stop-sign-group');
     
+    // Use approach angle to position sign on the correct side
+    const approachAngle = angle + Math.PI;
+    
     // Position the sign offset from the road edge
     const distance = roadWidth * 0.6;
-    const offsetAngle = angle - Math.PI / 4; // 45 degree offset for better visibility
+    const offsetAngle = approachAngle - Math.PI / 4; // 45 degree offset for better visibility
     
     const signPos = {
-      x: center.x + Math.cos(angle) * distance + Math.cos(offsetAngle) * 8,
-      y: center.y + Math.sin(angle) * distance + Math.sin(offsetAngle) * 8
+      x: center.x + Math.cos(approachAngle) * distance + Math.cos(offsetAngle) * 8,
+      y: center.y + Math.sin(approachAngle) * distance + Math.sin(offsetAngle) * 8
     };
     
     // Create post (with perspective)
@@ -70,7 +73,7 @@ export class RealisticControlsRenderer {
     text.setAttribute('fill', this.stopSign.textColor);
     text.setAttribute('font-family', 'Arial, sans-serif');
     text.setAttribute('font-weight', 'bold');
-    text.setAttribute('font-size', '5');
+    text.setAttribute('font-size', '4');
     text.textContent = 'STOP';
     group.appendChild(text);
     
@@ -137,13 +140,16 @@ export class RealisticControlsRenderer {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', 'traffic-light-group');
     
+    // Use approach angle to position traffic light on the correct side
+    const approachAngle = angle + Math.PI;
+    
     // Position the traffic light
     const distance = roadWidth * 0.8;
-    const offsetAngle = angle - Math.PI / 6; // 30 degree offset
+    const offsetAngle = approachAngle - Math.PI / 6; // 30 degree offset
     
     const lightPos = {
-      x: center.x + Math.cos(angle) * distance + Math.cos(offsetAngle) * 10,
-      y: center.y + Math.sin(angle) * distance + Math.sin(offsetAngle) * 10
+      x: center.x + Math.cos(approachAngle) * distance + Math.cos(offsetAngle) * 10,
+      y: center.y + Math.sin(approachAngle) * distance + Math.sin(offsetAngle) * 10
     };
     
     // Create pole
@@ -155,7 +161,7 @@ export class RealisticControlsRenderer {
     const arm = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     arm.setAttribute('x1', lightPos.x);
     arm.setAttribute('y1', lightPos.y - this.trafficLight.poleHeight);
-    arm.setAttribute('x2', lightPos.x + Math.cos(angle + Math.PI) * armLength);
+    arm.setAttribute('x2', lightPos.x + Math.cos(angle) * armLength);
     arm.setAttribute('y2', lightPos.y - this.trafficLight.poleHeight);
     arm.setAttribute('stroke', this.trafficLight.poleColor);
     arm.setAttribute('stroke-width', this.trafficLight.poleWidth);
@@ -255,13 +261,16 @@ export class RealisticControlsRenderer {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', 'yield-sign-group');
     
+    // Use approach angle to position sign on the correct side
+    const approachAngle = angle + Math.PI;
+    
     // Position the sign
     const distance = roadWidth * 0.6;
-    const offsetAngle = angle - Math.PI / 4;
+    const offsetAngle = approachAngle - Math.PI / 4;
     
     const signPos = {
-      x: center.x + Math.cos(angle) * distance + Math.cos(offsetAngle) * 8,
-      y: center.y + Math.sin(angle) * distance + Math.sin(offsetAngle) * 8
+      x: center.x + Math.cos(approachAngle) * distance + Math.cos(offsetAngle) * 8,
+      y: center.y + Math.sin(approachAngle) * distance + Math.sin(offsetAngle) * 8
     };
     
     // Create post
@@ -341,7 +350,7 @@ export class RealisticControlsRenderer {
     shadow.setAttribute('rx', size * 0.4);
     shadow.setAttribute('ry', size * 0.2);
     shadow.setAttribute('fill', '#000000');
-    shadow.setAttribute('opacity', '0.2');
+    shadow.setAttribute('opacity', '0.1');
     shadow.setAttribute('class', 'sign-shadow');
     return shadow;
   }
@@ -357,7 +366,7 @@ export class RealisticControlsRenderer {
     shadow.setAttribute('y2', pos.y - height * 0.7);
     shadow.setAttribute('stroke', '#000000');
     shadow.setAttribute('stroke-width', '2');
-    shadow.setAttribute('opacity', '0.15');
+    shadow.setAttribute('opacity', '0.08');
     shadow.setAttribute('class', 'pole-shadow');
     return shadow;
   }
