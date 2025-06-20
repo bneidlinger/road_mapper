@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Tool Mouse Debug</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+        }
+        #console {
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+            font-size: 11px;
+        }
+        .log-entry {
+            margin: 1px 0;
+        }
+        .log-entry.error { color: #f00; }
+        .log-entry.warn { color: #ff0; }
+        .log-entry.important { color: #0ff; font-weight: bold; }
+        #app {
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        .controls {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h3>Building Tool Mouse Event Debug</h3>
+    <div class="controls">
+        <button id="clear-console">Clear Console</button>
+        <button id="toggle-filter">Toggle Filter</button>
+        <label>
+            <input type="checkbox" id="filter-enabled" checked>
+            Filter spam
+        </label>
+    </div>
+    
+    <div id="console"></div>
+    
+    <div id="app"></div>
+    
+    <script>
+        // Console interceptor with filtering
+        const consoleDiv = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const filterCheckbox = document.getElementById('filter-enabled');
+        
+        const spamPatterns = [
+            /ToolManager\.getWorldPosition/,
+            /Passing mouse move to/,
+            /Pan conditions:.*toolNotActive: true/
+        ];
+        
+        function shouldFilter(message) {
+            if (!filterCheckbox.checked) return false;
+            return spamPatterns.some(pattern => pattern.test(message));
+        }
+        
+        function addLogEntry(message, type = 'log') {
+            if (shouldFilter(message)) return;
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            // Highlight important messages
+            if (message.includes('Starting left-click pan') || 
+                message.includes('Preview calculation') ||
+                message.includes('Tool active status') ||
+                message.includes('Pan conditions met')) {
+                entry.className += ' important';
+            }
+            
+            entry.textContent = `[${new Date().toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3})}] ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' ');
+            addLogEntry(message, 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLogEntry(args.join(' '), 'error');
+        };
+        
+        // Clear console button
+        document.getElementById('clear-console').addEventListener('click', () => {
+            consoleDiv.innerHTML = '';
+            console.log('Console cleared');
+        });
+        
+        // Toggle filter button
+        document.getElementById('toggle-filter').addEventListener('click', () => {
+            filterCheckbox.checked = !filterCheckbox.checked;
+        });
+        
+        // Add instructions
+        console.log('=== Building Tool Mouse Debug ===');
+        console.log('1. Press B to select Building tool');
+        console.log('2. Click and drag to create a building');
+        console.log('3. Watch for "Starting left-click pan" messages');
+        console.log('4. Check if preview calculations show changing coordinates');
+        console.log('================================');
+    </script>
+    
+    <script type="module" src="/src/app.js"></script>
+</body>
+</html>

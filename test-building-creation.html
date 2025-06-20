@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Creation Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #app {
+            height: 600px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        #console {
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h3>Building Creation Test</h3>
+    <button id="create-building">Create Test Building at (100,100)</button>
+    <button id="create-multiple">Create Multiple Buildings</button>
+    <button id="list-buildings">List All Buildings</button>
+    <button id="clear-buildings">Clear All Buildings</button>
+    
+    <div id="app">
+        <div id="toolbar-container"></div>
+        <div id="svg-container"></div>
+        <div id="status-bar-container"></div>
+        <div id="properties-panel"></div>
+    </div>
+    <div id="console"></div>
+    
+    <script type="module">
+        import { RoadMapperApp } from '/src/app.js';
+        import { Building } from '/src/modules/elements/Building.js';
+        
+        // Console output helper
+        const consoleDiv = document.getElementById('console');
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // Initialize app
+        const app = new RoadMapperApp();
+        app.init();
+        window.app = app; // For debugging
+        
+        // Test building creation
+        document.getElementById('create-building').addEventListener('click', () => {
+            log('Creating test building...');
+            const building = new Building(
+                `building_test_${Date.now()}`,
+                100, 100, 80, 60,
+                'commercial'
+            );
+            log(`Building created: ${building.id} at (${building.x}, ${building.y})`);
+            
+            app.elementManager.addBuilding(building);
+            log('Building added to ElementManager');
+            
+            // Check if it was added
+            const buildings = app.elementManager.getBuildings();
+            log(`Total buildings in ElementManager: ${buildings.length}`);
+        });
+        
+        document.getElementById('create-multiple').addEventListener('click', () => {
+            log('Creating multiple test buildings...');
+            const positions = [
+                { x: 200, y: 100, type: 'residential' },
+                { x: 300, y: 100, type: 'commercial' },
+                { x: 200, y: 200, type: 'industrial' },
+                { x: 300, y: 200, type: 'office' }
+            ];
+            
+            positions.forEach((pos, i) => {
+                const building = new Building(
+                    `building_multi_${Date.now()}_${i}`,
+                    pos.x, pos.y, 70, 50,
+                    pos.type
+                );
+                app.elementManager.addBuilding(building);
+                log(`Created ${pos.type} building at (${pos.x}, ${pos.y})`);
+            });
+            
+            const buildings = app.elementManager.getBuildings();
+            log(`Total buildings: ${buildings.length}`);
+        });
+        
+        document.getElementById('list-buildings').addEventListener('click', () => {
+            const buildings = app.elementManager.getBuildings();
+            log(`Listing all buildings (${buildings.length} total):`);
+            buildings.forEach(building => {
+                log(`  - ${building.id}: ${building.type} at (${building.x}, ${building.y}) size: ${building.width}x${building.height}`);
+            });
+            
+            // Check SVG elements
+            const svgBuildings = document.querySelectorAll('.building');
+            log(`SVG building elements found: ${svgBuildings.length}`);
+        });
+        
+        document.getElementById('clear-buildings').addEventListener('click', () => {
+            const buildings = app.elementManager.getBuildings();
+            log(`Clearing ${buildings.length} buildings...`);
+            buildings.forEach(building => {
+                app.elementManager.removeBuilding(building.id);
+            });
+            log('All buildings cleared');
+        });
+        
+        // Log initial state
+        setTimeout(() => {
+            log('App initialized');
+            log(`ElementManager: ${app.elementManager ? 'Ready' : 'Not ready'}`);
+            log(`SVGRenderer: ${app.svgRenderer ? 'Ready' : 'Not ready'}`);
+        }, 1000);
+    </script>
+</body>
+</html>

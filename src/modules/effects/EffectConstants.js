@@ -59,8 +59,8 @@ export const COLORS = {
 
 // Zoom thresholds for different rendering modes
 export const ZOOM_THRESHOLDS = {
-  BIRDS_EYE: 0.2,
-  NETWORK: 0.3,
+  BIRDS_EYE: 0.25,  // Increased from 0.2 to activate bird's eye sooner
+  NETWORK: 0.4,     // Adjusted for better transition
   SIMPLIFIED: 0.7,
   STANDARD: 1.5,
   DETAILED: 3.0,

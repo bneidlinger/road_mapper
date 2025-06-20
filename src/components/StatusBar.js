@@ -83,9 +83,14 @@ export class StatusBar {
       this.elements.detailLevel.textContent = detailNames[detailLevel] || detailLevel;
       
       // Update view mode (bird's eye or normal)
-      const isBirdsEye = this.viewport.zoom < 0.2;
+      const isBirdsEye = this.viewport.isBirdsEyeMode();
       this.elements.viewMode.textContent = isBirdsEye ? 'Bird\'s Eye' : 'Normal';
       this.elements.viewMode.style.color = isBirdsEye ? '#00ff88' : '';
+      
+      // Add indicator if manually enabled
+      if (this.viewport.manualBirdsEyeMode && this.viewport.zoom >= 0.25) {
+        this.elements.viewMode.textContent = 'Bird\'s Eye (Manual)';
+      }
     });
     
     this.toolManager.on('toolChange', (toolName) => {

@@ -105,6 +105,11 @@ export class ToolManager extends EventEmitter {
           this.currentTool.onMouseDown(event, worldPos);
           // Check if the tool is actively using the mouse (e.g., started drawing)
           this.toolIsActive = this.currentTool.isUsingMouse && this.currentTool.isUsingMouse();
+          console.log('ToolManager.handleMouseDown: Tool active status:', {
+            toolName: this.activeTool,
+            toolIsActive: this.toolIsActive,
+            hasIsUsingMouse: !!this.currentTool.isUsingMouse
+          });
         }
       }
     } catch (error) {
@@ -118,7 +123,8 @@ export class ToolManager extends EventEmitter {
     const worldPos = this.getWorldPosition(event);
     
     // Check if we should start left-click panning
-    if (this.mouseDownPos && !this.tools[TOOLS.PAN].isPanning && event.buttons === 1 && !this.toolIsActive) {
+    // Only check once if the tool is active - don't double-check
+    if (this.mouseDownPos && !this.tools[TOOLS.PAN].isPanning && event.buttons === 1) {
       const dx = event.clientX - this.mouseDownPos.x;
       const dy = event.clientY - this.mouseDownPos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -126,12 +132,20 @@ export class ToolManager extends EventEmitter {
       // Start panning if mouse moved while holding left button and tool isn't active
       if (distance > 5 && !this.hasMoved) {
         this.hasMoved = true;
-        // Only start panning if the current tool isn't actively using the mouse
-        if (!this.currentTool || !this.currentTool.isUsingMouse || !this.currentTool.isUsingMouse()) {
+        
+        // Use the toolIsActive flag that was set during mouseDown
+        if (!this.toolIsActive) {
+          console.log('ToolManager: Starting left-click pan! Tool not active:', {
+            toolName: this.activeTool,
+            toolIsActive: this.toolIsActive,
+            distance: distance
+          });
           if (this.currentTool && this.currentTool.cancelAction) {
             this.currentTool.cancelAction();
           }
           this.tools[TOOLS.PAN].startLeftClickPan(event);
+        } else {
+          console.log('ToolManager: Tool is active, not starting pan:', this.activeTool);
         }
       }
     }
@@ -154,11 +168,20 @@ export class ToolManager extends EventEmitter {
     this.hasMoved = false;
     this.toolIsActive = false;
     
+    // Check if pan tool was active before processing
+    const wasLeftClickPan = this.tools[TOOLS.PAN].isLeftClickPan;
+    
     if (this.tools[TOOLS.PAN].isPanning) {
       this.tools[TOOLS.PAN].onMouseUp(event, worldPos);
-    } else if (this.currentTool) {
-      // Only pass mouse up to tool if we didn't pan
-      if (!this.tools[TOOLS.PAN].isLeftClickPan) {
+    }
+    
+    // Always pass mouseUp to current tool if it was a left click, even if panning occurred
+    // This ensures tools can clean up their state properly
+    if (this.currentTool && event.button === 0) {
+      // If we were left-click panning, the tool might want to cancel its action
+      if (wasLeftClickPan && this.currentTool.cancelAction) {
+        this.currentTool.cancelAction();
+      } else {
         this.currentTool.onMouseUp(event, worldPos);
       }
     }
@@ -180,7 +203,7 @@ export class ToolManager extends EventEmitter {
   }
 
   getWorldPosition(event) {
-    if (this.viewport.screenToWorld) {
+    if (this.viewport && this.viewport.screenToWorld) {
       return this.viewport.screenToWorld(event.clientX, event.clientY);
     }
     // Fallback for canvas

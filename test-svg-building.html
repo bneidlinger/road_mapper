@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Building Test</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: monospace;
+        }
+        svg {
+            border: 1px solid #ccc;
+            background: #1a1a1a;
+        }
+        .building {
+            cursor: pointer;
+        }
+        .building:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h3>Direct SVG Building Test</h3>
+    <p>This tests the Building draw() method directly</p>
+    
+    <svg id="test-svg" width="800" height="600" viewBox="0 0 800 600">
+        <g id="buildings-layer"></g>
+    </svg>
+    
+    <script type="module">
+        import { Building } from '/src/modules/elements/Building.js';
+        
+        // Test the Building draw method directly
+        const svg = document.getElementById('test-svg');
+        const layer = document.getElementById('buildings-layer');
+        
+        // Create test buildings
+        const buildings = [
+            new Building('test1', 100, 100, 80, 60, 'residential'),
+            new Building('test2', 200, 100, 100, 80, 'commercial'),
+            new Building('test3', 350, 100, 120, 100, 'industrial'),
+            new Building('test4', 500, 100, 90, 70, 'office'),
+            // Large buildings to test L and U shapes
+            new Building('test5', 100, 250, 150, 120, 'commercial'),
+            new Building('test6', 300, 250, 180, 140, 'office')
+        ];
+        
+        console.log('Creating', buildings.length, 'test buildings');
+        
+        buildings.forEach(building => {
+            console.log(`Drawing building ${building.id}:`, {
+                x: building.x,
+                y: building.y,
+                width: building.width,
+                height: building.height,
+                type: building.type,
+                color: building.color
+            });
+            
+            const element = building.draw();
+            console.log('SVG element created:', element);
+            
+            // Add click handler for testing
+            element.addEventListener('click', () => {
+                console.log('Clicked building:', building.id);
+                building.setSelected(!building.selected);
+                // Redraw
+                const newElement = building.draw();
+                element.replaceWith(newElement);
+            });
+            
+            layer.appendChild(element);
+        });
+        
+        // Check what was actually added
+        setTimeout(() => {
+            const addedBuildings = layer.querySelectorAll('.building');
+            console.log('Buildings in SVG:', addedBuildings.length);
+            addedBuildings.forEach(el => {
+                console.log('Building element:', el.id, el.getBBox());
+            });
+        }, 100);
+    </script>
+</body>
+</html>

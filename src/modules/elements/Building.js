@@ -101,9 +101,8 @@ export class Building {
     }
 
     draw() {
-        console.log('Building.draw() called for:', this.id, 'at', this.x, this.y, 'size', this.width, 'x', this.height);
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('id', `building-${this.id}`);
+        g.setAttribute('id', this.id);
         g.setAttribute('class', 'building');
         g.setAttribute('data-type', this.type);
 
@@ -144,7 +143,6 @@ export class Building {
         
         shadow.setAttribute('fill', '#000');
         shadow.setAttribute('opacity', '0.2');
-        shadow.setAttribute('filter', 'blur(2px)');
         
         // Apply rotation if needed
         if (this.rotation !== 0) {

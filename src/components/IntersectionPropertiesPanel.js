@@ -94,23 +94,21 @@ export class IntersectionPropertiesPanel {
           </div>
 
           <div class="property-group" id="stop-sign-config">
-            <label>Stop Sign Configuration</label>
-            <div class="stop-sign-options">
-              <label class="radio-option">
-                <input type="radio" name="stop-count" value="2">
-                <span>2-way stop</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" name="stop-count" value="3">
-                <span>3-way stop</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" name="stop-count" value="4" checked>
-                <span>4-way stop</span>
-              </label>
-            </div>
+            <label>Stop Sign Placement</label>
             <div id="stop-position-selector" class="stop-positions">
               <p class="hint">Click on approaches to toggle stop signs</p>
+              <div class="intersection-diagram">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <!-- Will be populated dynamically -->
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="property-group" id="yield-sign-config" style="display: none;">
+            <label>Yield Sign Placement</label>
+            <div id="yield-position-selector" class="yield-positions">
+              <p class="hint">Click on approaches to toggle yield signs</p>
               <div class="intersection-diagram">
                 <svg width="120" height="120" viewBox="0 0 120 120">
                   <!-- Will be populated dynamically -->
@@ -202,15 +200,7 @@ export class IntersectionPropertiesPanel {
       });
     });
 
-    // Stop sign configuration
-    this.container.querySelectorAll('input[name="stop-count"]').forEach(input => {
-      input.addEventListener('change', (e) => {
-        if (this.pendingChanges) {
-          this.pendingChanges.stopSignConfig.count = parseInt(e.target.value);
-          this.updateStopPositionSelector();
-        }
-      });
-    });
+    // No longer need stop-count radio buttons
 
     // Traffic light configuration
     const timingSelect = this.container.querySelector('#traffic-timing');
@@ -259,6 +249,9 @@ export class IntersectionPropertiesPanel {
       count: this.pendingChanges.stopSignConfig.count,
       positions: [...this.pendingChanges.stopSignConfig.positions]
     };
+    this.currentIntersection.yieldSignConfig = { 
+      positions: [...this.pendingChanges.yieldSignConfig.positions]
+    };
     this.currentIntersection.trafficLightConfig = { ...this.pendingChanges.trafficLightConfig };
     
     console.log('Updated intersection:', this.currentIntersection);
@@ -292,13 +285,17 @@ export class IntersectionPropertiesPanel {
 
     // Show/hide relevant config sections
     const stopConfig = this.container.querySelector('#stop-sign-config');
+    const yieldConfig = this.container.querySelector('#yield-sign-config');
     const trafficConfig = this.container.querySelector('#traffic-light-config');
     
     stopConfig.style.display = type === 'stop_sign' ? 'block' : 'none';
+    yieldConfig.style.display = type === 'yield' ? 'block' : 'none';
     trafficConfig.style.display = type === 'traffic_light' ? 'block' : 'none';
 
     if (type === 'stop_sign') {
       this.updateStopPositionSelector();
+    } else if (type === 'yield') {
+      this.updateYieldPositionSelector();
     }
   }
 
@@ -382,6 +379,92 @@ export class IntersectionPropertiesPanel {
     this.updateStopPositionSelector();
   }
 
+  updateYieldPositionSelector() {
+    const svg = this.container.querySelector('#yield-position-selector svg');
+    const connections = this.getConnectionAngles();
+    
+    svg.innerHTML = '';
+    
+    // Draw intersection center
+    const center = { x: 60, y: 60 };
+    const intersectionCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    intersectionCircle.setAttribute('cx', center.x);
+    intersectionCircle.setAttribute('cy', center.y);
+    intersectionCircle.setAttribute('r', '20');
+    intersectionCircle.setAttribute('fill', '#666');
+    intersectionCircle.setAttribute('stroke', '#333');
+    intersectionCircle.setAttribute('stroke-width', '2');
+    svg.appendChild(intersectionCircle);
+
+    // Draw approach roads and yield sign positions
+    connections.forEach((conn, index) => {
+      const angle = conn.angle;
+      const distance = 40;
+      
+      // Draw road approach
+      const roadPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const startX = center.x + Math.cos(angle) * 20;
+      const startY = center.y + Math.sin(angle) * 20;
+      const endX = center.x + Math.cos(angle) * 55;
+      const endY = center.y + Math.sin(angle) * 55;
+      
+      roadPath.setAttribute('d', `M ${startX} ${startY} L ${endX} ${endY}`);
+      roadPath.setAttribute('stroke', '#999');
+      roadPath.setAttribute('stroke-width', '10');
+      roadPath.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(roadPath);
+
+      // Draw yield sign position indicator
+      const yieldX = center.x + Math.cos(angle) * distance;
+      const yieldY = center.y + Math.sin(angle) * distance;
+      
+      const yieldGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      yieldGroup.setAttribute('class', 'yield-position');
+      yieldGroup.setAttribute('data-index', index);
+      yieldGroup.style.cursor = 'pointer';
+
+      // Draw triangle for yield sign
+      const triangleSize = 8;
+      const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      const points = `${yieldX},${yieldY - triangleSize} ${yieldX - triangleSize * 0.866},${yieldY + triangleSize * 0.5} ${yieldX + triangleSize * 0.866},${yieldY + triangleSize * 0.5}`;
+      triangle.setAttribute('points', points);
+      
+      const hasYieldSign = this.pendingChanges.yieldSignConfig && this.pendingChanges.yieldSignConfig.positions.includes(index);
+      triangle.setAttribute('fill', hasYieldSign ? '#ff4444' : '#333');
+      triangle.setAttribute('stroke', '#fff');
+      triangle.setAttribute('stroke-width', '2');
+      
+      yieldGroup.appendChild(triangle);
+      
+      // Add click handler
+      yieldGroup.addEventListener('click', () => {
+        this.toggleYieldPosition(index);
+      });
+      
+      svg.appendChild(yieldGroup);
+    });
+  }
+
+  toggleYieldPosition(index) {
+    if (!this.pendingChanges) return;
+    
+    // Initialize yield config if not present
+    if (!this.pendingChanges.yieldSignConfig) {
+      this.pendingChanges.yieldSignConfig = { positions: [] };
+    }
+    
+    const positions = this.pendingChanges.yieldSignConfig.positions;
+    const idx = positions.indexOf(index);
+    
+    if (idx >= 0) {
+      positions.splice(idx, 1);
+    } else {
+      positions.push(index);
+    }
+    
+    this.updateYieldPositionSelector();
+  }
+
   getConnectionAngles() {
     if (!this.currentIntersection) return [];
     
@@ -455,6 +538,9 @@ export class IntersectionPropertiesPanel {
         count: intersection.stopSignConfig.count,
         positions: [...intersection.stopSignConfig.positions] 
       },
+      yieldSignConfig: intersection.yieldSignConfig ? 
+        { positions: [...intersection.yieldSignConfig.positions] } : 
+        { positions: [] },
       trafficLightConfig: { ...intersection.trafficLightConfig }
     };
     
@@ -510,11 +596,7 @@ export class IntersectionPropertiesPanel {
     // Set control type
     this.setControlType(intersection.controlType);
     
-    // Set stop sign config
-    const stopCountInput = this.container.querySelector(`input[name="stop-count"][value="${intersection.stopSignConfig.count}"]`);
-    if (stopCountInput) {
-      stopCountInput.checked = true;
-    }
+    // No longer need to set stop count radio buttons
     
     // Set traffic light config
     this.container.querySelector('#traffic-timing').value = intersection.trafficLightConfig.timing;
@@ -523,9 +605,11 @@ export class IntersectionPropertiesPanel {
     // Update connected roads list
     this.updateConnectedRoadsList();
     
-    // Update stop position selector if needed
+    // Update position selectors if needed
     if (intersection.controlType === 'stop_sign') {
       this.updateStopPositionSelector();
+    } else if (intersection.controlType === 'yield') {
+      this.updateYieldPositionSelector();
     }
   }
 

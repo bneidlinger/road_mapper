@@ -130,10 +130,17 @@ export class SVGRoadElement extends SVGBaseElement {
     }
   }
 
-  updateDetailLevel(zoom) {
+  updateDetailLevel(zoom, forceMode = null) {
     // Bird's eye view mode (circuit board style) when zoomed out far
-    const isBirdsEye = zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
-    console.log('SVGRoadElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', isBirdsEye, 'roadId:', this.road?.id, 'roadType:', this.road?.type);
+    // Check if we have a viewport with manual bird's eye mode
+    let isBirdsEye = zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+    
+    // If forceMode is provided, use it (passed from visibility manager)
+    if (forceMode !== null) {
+      isBirdsEye = forceMode;
+    }
+    
+    console.log('SVGRoadElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', isBirdsEye, 'forceMode:', forceMode, 'roadId:', this.road?.id);
     
     // Ensure we have element references
     if (!this.mainPath) {
@@ -154,9 +161,7 @@ export class SVGRoadElement extends SVGBaseElement {
       }
     }
     
-    console.log('mainPath exists:', !!this.mainPath, 'roadGroup exists:', !!this.roadGroup);
-    console.log('Current stroke color before update:', this.mainPath?.getAttribute('stroke'));
-    console.log('Road type:', this.road?.type, 'Properties:', this.road?.properties);
+    // Debugging logs removed for cleaner console
     
     // Make sure the group itself is visible
     if (this.group) {
@@ -198,35 +203,21 @@ export class SVGRoadElement extends SVGBaseElement {
       
       // Apply bird's eye style when zoomed out
       if (isBirdsEye) {
-        // Circuit board style - thin glowing green lines
-        console.log('Applying bird\'s eye style to road', this.road?.id);
-        console.log('mainPath element:', this.mainPath);
-        console.log('mainPath tagName:', this.mainPath?.tagName);
-        console.log('mainPath className:', this.mainPath?.getAttribute('class'));
+        console.log(`Applying bird's eye style to road ${this.road.id}`);
         
         // Force removal of any existing styles first
         this.mainPath.removeAttribute('style');
         
-        // Use brighter green and ensure it's visible
-        // Fixed stroke width for bird's eye view
-        const strokeWidth = 5; // Simple fixed width for now
-        
-        this.mainPath.setAttribute('stroke', '#00ff88');
-        this.mainPath.setAttribute('stroke-width', strokeWidth);
-        this.mainPath.setAttribute('opacity', '1');
-        this.mainPath.setAttribute('stroke-opacity', '1');
-        this.mainPath.setAttribute('fill', 'none');
-        
         // Use the new animation system for consistent styling
         BirdsEyeAnimations.applyRoadBirdsEyeStyle(this.mainPath);
         
-        // Apply glow filter (commenting out for now to debug)
-        // this.mainPath.style.filter = 'url(#circuit-glow)';
-        
-        console.log('Applied stroke color:', this.mainPath.getAttribute('stroke'));
-        console.log('Applied stroke width:', strokeWidth, 'px at zoom', zoom);
-        console.log('Applied inline stroke:', this.mainPath.style.stroke);
-        console.log('Computed style stroke:', window.getComputedStyle(this.mainPath).stroke);
+        // Double-check the styles were applied
+        const appliedStroke = this.mainPath.getAttribute('stroke');
+        const appliedStyle = this.mainPath.style.cssText;
+        console.log(`Road ${this.road.id} after bird's eye:`, {
+          stroke: appliedStroke,
+          style: appliedStyle
+        });
         
         // Hide ALL other road details
         this.surfaceRenderer.updateVisibility(zoom, true);

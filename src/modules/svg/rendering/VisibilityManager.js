@@ -4,8 +4,9 @@ import { ZOOM_THRESHOLDS } from '../../effects/EffectConstants.js';
  * Manages visibility and detail levels for SVG elements based on zoom
  */
 export class VisibilityManager {
-  constructor(svgManager) {
+  constructor(svgManager, viewport) {
     this.svgManager = svgManager;
+    this.viewport = viewport;
   }
 
   /**
@@ -14,7 +15,8 @@ export class VisibilityManager {
    * @param {Map} svgElements - Map of SVG elements
    */
   updateVisibility(zoom, svgElements) {
-    console.log('SVGRenderer updateVisibility - zoom:', zoom);
+    const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+    // console.log('VisibilityManager updateVisibility - zoom:', zoom, 'isBirdsEye:', isBirdsEye, 'manual:', this.viewport?.manualBirdsEyeMode);
     
     // Update grid visibility
     this.updateGridVisibility(zoom);
@@ -31,7 +33,7 @@ export class VisibilityManager {
    */
   updateGridVisibility(zoom) {
     const gridLayer = this.svgManager.layers.grid;
-    const isBirdsEye = zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+    const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
     
     if (gridLayer) {
       if (isBirdsEye) {
@@ -61,7 +63,7 @@ export class VisibilityManager {
    * Update background color for bird's eye view
    */
   updateBackgroundColor(zoom) {
-    const isBirdsEye = zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+    const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
     const container = document.getElementById('svg-container');
     
     if (container) {
@@ -79,19 +81,43 @@ export class VisibilityManager {
    * Update element detail levels
    */
   updateElementDetails(zoom, svgElements) {
-    console.log(`Updating ${svgElements.size} elements for zoom ${zoom}`);
+    const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+    console.log(`VisibilityManager.updateElementDetails: ${svgElements.size} elements, zoom: ${zoom}, birdsEye: ${isBirdsEye}`);
     
     svgElements.forEach((item, id) => {
       // Handle both direct elements and wrapped elements (like buildings)
       const element = item.element || item;
       const dataObject = item.building || item.road || item.intersection || element;
       
-      console.log(`Updating element ${id}, type: ${dataObject?.constructor?.name || 'Unknown'}`);
-      
-      if (dataObject && dataObject.updateDetailLevel) {
-        dataObject.updateDetailLevel(zoom);
+      // Special handling for SVGRoadElement and SVGIntersectionElement which are stored directly
+      if (item && item.updateDetailLevel) {
+        // It's a direct element (road or intersection)
+        console.log(`Updating ${item.constructor.name} ${id} directly`);
+        item.updateDetailLevel(zoom, isBirdsEye);
+      } else if (dataObject && dataObject.updateDetailLevel) {
+        // It's a wrapped element
+        if (dataObject.updateDetailLevel.length >= 2) {
+          dataObject.updateDetailLevel(zoom, isBirdsEye);
+        } else {
+          dataObject.updateDetailLevel(zoom);
+        }
       }
     });
+    
+    // Log a sample element to check if bird's eye styles are applied
+    const firstRoad = Array.from(svgElements.values()).find(item => {
+      const obj = item.road || item;
+      return obj && obj.constructor && obj.constructor.name === 'SVGRoadElement';
+    });
+    
+    if (firstRoad) {
+      const roadEl = firstRoad.road || firstRoad;
+      console.log('Sample road element state:', {
+        id: roadEl.road?.id,
+        mainPathColor: roadEl.mainPath?.getAttribute('stroke'),
+        mainPathOpacity: roadEl.mainPath?.getAttribute('opacity')
+      });
+    }
   }
 
   /**
@@ -108,8 +134,8 @@ export class VisibilityManager {
   /**
    * Check if in bird's eye view
    */
-  static isBirdsEyeView(zoom) {
-    return zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
+  isBirdsEyeView(zoom) {
+    return this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
   }
 
   /**

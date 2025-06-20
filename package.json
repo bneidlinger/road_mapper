@@ -1,11 +1,14 @@
 {
   "name": "road-mapper",
-  "version": "1.0.0",
+  "version": "0.1.0-alpha",
   "description": "Pretty good road and transportation network design application",
   "type": "module",
   "scripts": {
     "dev": "webpack serve",
     "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "preview": "npm run build && cd dist && python -m http.server 8000",
+    "deploy": "./deploy-gh-pages.sh",
     "lint": "eslint src --ext .js",
     "format": "prettier --write \"src/**/*.{js,css,html}\""
   },

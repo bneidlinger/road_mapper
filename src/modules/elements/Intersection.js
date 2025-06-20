@@ -14,6 +14,9 @@ export class Intersection {
       count: 4, // number of stop signs (2, 3, or 4 way)
       positions: [] // which approaches have stop signs
     };
+    this.yieldSignConfig = {
+      positions: [] // which approaches have yield signs
+    };
     this.trafficLightConfig = {
       timing: 'standard', // 'standard', 'rush_hour', 'sensor'
       cycle: 60 // seconds
@@ -140,6 +143,7 @@ export class Intersection {
       type: this.type,
       controlType: this.controlType,
       stopSignConfig: this.stopSignConfig,
+      yieldSignConfig: this.yieldSignConfig,
       trafficLightConfig: this.trafficLightConfig,
       connectedRoads: this.connectedRoads
     };
@@ -151,6 +155,9 @@ export class Intersection {
     intersection.controlType = data.controlType || 'stop_sign';
     intersection.stopSignConfig = data.stopSignConfig || {
       count: 4,
+      positions: []
+    };
+    intersection.yieldSignConfig = data.yieldSignConfig || {
       positions: []
     };
     intersection.trafficLightConfig = data.trafficLightConfig || {

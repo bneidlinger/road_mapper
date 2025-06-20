@@ -21,7 +21,7 @@ export class SVGRenderer {
     this.svgElements = new Map();
     
     // Initialize visibility manager
-    this.visibilityManager = new VisibilityManager(this.svgManager);
+    this.visibilityManager = new VisibilityManager(this.svgManager, this.viewport);
     
     // Setup patterns and filters
     this.setupDefsAndPatterns();
@@ -118,7 +118,8 @@ export class SVGRenderer {
     
     // Apply initial detail level after a small delay to ensure DOM is ready
     setTimeout(() => {
-      svgRoad.updateDetailLevel(this.viewport.zoom);
+      const isBirdsEye = this.viewport.isBirdsEyeMode();
+      svgRoad.updateDetailLevel(this.viewport.zoom, isBirdsEye);
     }, 0);
   }
 
@@ -138,14 +139,15 @@ export class SVGRenderer {
     
     // Apply initial detail level after a small delay to ensure DOM is ready
     setTimeout(() => {
-      svgIntersection.updateDetailLevel(this.viewport.zoom);
+      const isBirdsEye = this.viewport.isBirdsEyeMode();
+      svgIntersection.updateDetailLevel(this.viewport.zoom, isBirdsEye);
       
       // Also update all connected roads to ensure they're visible
       if (intersection.connections) {
         for (const connection of intersection.connections) {
           const svgRoad = this.svgElements.get(connection.roadId);
           if (svgRoad && svgRoad.updateDetailLevel) {
-            svgRoad.updateDetailLevel(this.viewport.zoom);
+            svgRoad.updateDetailLevel(this.viewport.zoom, isBirdsEye);
           }
         }
       }
@@ -182,12 +184,9 @@ export class SVGRenderer {
   }
 
   addBuilding(building) {
-    console.log('SVGRenderer.addBuilding called for:', building.id, building);
     const element = building.draw();
-    console.log('Building SVG element created:', element);
     this.svgElements.set(building.id, { element, building });
     this.svgManager.addToLayer('ground', element);
-    console.log('Building element added to ground layer');
     
     // Force visibility update
     this.updateVisibility();

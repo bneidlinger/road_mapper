@@ -188,16 +188,20 @@ class RoadMapperApp {
       } else {
         // Non-ctrl/cmd shortcuts
         switch(e.key) {
-          case 'b':
-          case 'B':
-            // Jump to bird's eye view
-            console.log('Jumping to bird\'s eye view...');
-            this.svgRenderer.viewport.setZoom(0.15, window.innerWidth / 2, window.innerHeight / 2);
-            // Force update visibility
+          case 'e':
+          case 'E':
+            // Toggle bird's eye view mode (E for Eye)
+            const isNowBirdsEye = this.svgRenderer.viewport.toggleBirdsEyeMode();
+            console.log('Toggled bird\'s eye mode:', isNowBirdsEye);
+            
+            // Force update visibility immediately
+            this.svgRenderer.updateVisibility();
+            
+            // Double-check that elements are being updated
             setTimeout(() => {
+              console.log('Re-updating visibility after bird\'s eye toggle');
               this.svgRenderer.updateVisibility();
-              console.log('Forced visibility update at zoom:', this.svgRenderer.viewport.zoom);
-            }, 100);
+            }, 50);
             break;
         }
       }
@@ -278,6 +282,9 @@ class RoadMapperApp {
     alert('SVG export coming soon!');
   }
 }
+
+// Export for testing
+export { RoadMapperApp };
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

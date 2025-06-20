@@ -68,14 +68,25 @@ export class SVGIntersectionElement extends SVGBaseElement {
     
     // Bird's eye view - render as glowing LED node
     if (this.isBirdsEye) {
-      console.log('Rendering bird\'s eye intersection for', this.intersection.id);
+      // console.log('Rendering bird\'s eye intersection for', this.intersection.id);
       this.renderBirdsEyeIntersection();
+      
+      // Still render control elements in bird's eye view if zoomed in enough
+      if (this.viewport.zoom >= 0.5) {
+        const connections = this.getConnectionAngles();
+        const roadWidth = this.getRoadWidth();
+        this.addControlElements(connections, roadWidth);
+      }
+      
+      if (this.intersection.selected) {
+        this.renderSelectionHighlight();
+      }
       return;
     }
     
     const connections = this.getConnectionAngles();
     
-    console.log('Rendering intersection', this.intersection.id, 'with', connections.length, 'connections');
+    // console.log('Rendering intersection', this.intersection.id, 'with', connections.length, 'connections');
     
     // Get road width
     const roadWidth = this.getRoadWidth();
@@ -203,12 +214,26 @@ export class SVGIntersectionElement extends SVGBaseElement {
   }
 
   addYieldSigns(connections, roadWidth) {
-    // Add yield signs at minor road approaches
+    // Add yield signs based on configuration
+    if (!this.intersection.yieldSignConfig || !this.intersection.yieldSignConfig.positions) {
+      // Fallback to default behavior if no config
+      connections.forEach((conn, index) => {
+        if ((connections.length === 4 && (index === 1 || index === 3)) ||
+            (connections.length === 3 && index === 1)) {
+          const yieldSign = this.controlsRenderer.createYieldSign(
+            this.intersection,
+            conn.angle,
+            roadWidth
+          );
+          this.element.appendChild(yieldSign);
+        }
+      });
+      return;
+    }
+    
+    // Use configured positions
     connections.forEach((conn, index) => {
-      // Add yield signs to approaches 1 and 3 for 4-way intersections
-      // Or to the minor road for T-intersections
-      if ((connections.length === 4 && (index === 1 || index === 3)) ||
-          (connections.length === 3 && index === 1)) {
+      if (this.intersection.yieldSignConfig.positions.includes(index)) {
         const yieldSign = this.controlsRenderer.createYieldSign(
           this.intersection,
           conn.angle,
@@ -316,10 +341,14 @@ export class SVGIntersectionElement extends SVGBaseElement {
     this.renderIntersection();
   }
 
-  updateDetailLevel(zoom) {
+  updateDetailLevel(zoom, forceMode = null) {
     // Check if we're in bird's eye view using centralized constant
-    this.isBirdsEye = BirdsEyeAnimations.isBirdsEyeZoom(zoom);
-    console.log('SVGIntersectionElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', this.isBirdsEye);
+    if (forceMode !== null) {
+      this.isBirdsEye = forceMode;
+    } else {
+      this.isBirdsEye = BirdsEyeAnimations.isBirdsEyeZoom(zoom);
+    }
+    console.log('SVGIntersectionElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', this.isBirdsEye, 'forceMode:', forceMode);
     // Re-render to adjust detail levels based on zoom
     this.renderIntersection();
   }

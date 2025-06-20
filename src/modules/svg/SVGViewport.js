@@ -15,6 +15,9 @@ export class SVGViewport extends EventEmitter {
     this.minZoom = 0.1;
     this.maxZoom = 6; // Cap at 600% for performance
     
+    // Bird's eye mode state
+    this.manualBirdsEyeMode = false; // Track if bird's eye is manually enabled
+    
     // Add compatibility properties for existing code
     Object.defineProperty(this, 'panX', {
       get() { return -this.x * this.zoom + this.width / 2; },
@@ -105,6 +108,13 @@ export class SVGViewport extends EventEmitter {
     }
     
     this.zoom = newZoom;
+    
+    // Auto-disable manual bird's eye mode when zooming into normal range
+    if (this.manualBirdsEyeMode && newZoom >= 0.25) {
+      this.manualBirdsEyeMode = false;
+      // Auto-disabled manual bird's eye mode due to zoom in
+    }
+    
     this.updateViewBox();
   }
 
@@ -175,5 +185,26 @@ export class SVGViewport extends EventEmitter {
       width: viewBox.width,
       height: viewBox.height
     };
+  }
+
+  /**
+   * Toggle bird's eye mode manually
+   */
+  toggleBirdsEyeMode() {
+    this.manualBirdsEyeMode = !this.manualBirdsEyeMode;
+    // Manual bird's eye mode toggled
+    
+    // Emit change event to trigger visibility update
+    this.updateViewBox();
+    
+    return this.manualBirdsEyeMode;
+  }
+
+  /**
+   * Check if currently in bird's eye mode (either manual or zoom-based)
+   */
+  isBirdsEyeMode() {
+    const zoomThreshold = 0.25;
+    return this.manualBirdsEyeMode || this.zoom < zoomThreshold;
   }
 }

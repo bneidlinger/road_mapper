@@ -13,30 +13,58 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseDown(event, worldPos) {
-        console.log('BuildingTool.onMouseDown:', worldPos);
+        console.log('BuildingTool.onMouseDown:', {
+            button: event.button,
+            worldPos: worldPos,
+            isDrawing: this.isDrawing
+        });
         // Only start drawing on left mouse button
         if (event.button === 0) {
             this.isDrawing = true;
             this.startPoint = { ...worldPos };
             this.previewRect = null; // Reset preview rect on new draw
             this.hasDrawnPreview = false; // Track if we've actually drawn a preview
+            console.log('BuildingTool: Started drawing at', this.startPoint);
         }
     }
 
     onMouseMove(event, worldPos) {
+        // Reduced logging - only log important state changes
+        
         // Only show preview if mouse button is still held down (button 0 = left mouse)
-        if (this.isDrawing && this.startPoint && event.buttons === 1) {
-            // Show preview rectangle
+        if (this.isDrawing && this.startPoint) {
+            // Check button state
+            if (event.buttons !== 1) {
+                console.log('BuildingTool: Mouse button not pressed, buttons:', event.buttons);
+            }
+            
+            // Show preview rectangle regardless of button state for debugging
+            const width = Math.abs(worldPos.x - this.startPoint.x);
+            const height = Math.abs(worldPos.y - this.startPoint.y);
+            
             this.previewRect = {
                 x: Math.min(this.startPoint.x, worldPos.x),
                 y: Math.min(this.startPoint.y, worldPos.y),
-                width: Math.abs(worldPos.x - this.startPoint.x),
-                height: Math.abs(worldPos.y - this.startPoint.y)
+                width: width,
+                height: height
             };
+            
+            // Only log significant changes
+            if (!this.lastLoggedWidth || Math.abs(width - this.lastLoggedWidth) > 10 || 
+                !this.lastLoggedHeight || Math.abs(height - this.lastLoggedHeight) > 10) {
+                console.log('BuildingTool: Preview size:', {
+                    width: Math.round(width),
+                    height: Math.round(height)
+                });
+                this.lastLoggedWidth = width;
+                this.lastLoggedHeight = height;
+            }
+            
             this.hasDrawnPreview = true;
-            console.log('BuildingTool preview rect:', this.previewRect);
             this.toolManager.emit('redraw');
-        } else if (this.isDrawing && event.buttons === 0) {
+        }
+        
+        if (this.isDrawing && event.buttons === 0) {
             // Mouse button was released outside of normal flow, cancel drawing
             console.log('BuildingTool: Mouse released during move, canceling');
             this.cancelAction();
@@ -44,7 +72,16 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseUp(event, worldPos) {
-        console.log('BuildingTool.onMouseUp:', worldPos, 'isDrawing:', this.isDrawing, 'previewRect:', this.previewRect, 'hasDrawnPreview:', this.hasDrawnPreview);
+        console.log('BuildingTool.onMouseUp called:', {
+            button: event.button,
+            isDrawing: this.isDrawing,
+            hasDrawnPreview: this.hasDrawnPreview,
+            startPoint: this.startPoint,
+            previewRect: this.previewRect,
+            width: this.previewRect?.width,
+            height: this.previewRect?.height,
+            sizeCheck: this.previewRect ? `${this.previewRect.width} > 10 && ${this.previewRect.height} > 10 = ${this.previewRect.width > 10 && this.previewRect.height > 10}` : 'N/A'
+        });
         
         // Only process if we were actually drawing, had a preview, and it's the left mouse button
         if (event.button === 0 && this.isDrawing && this.hasDrawnPreview && 
@@ -65,27 +102,30 @@ export class BuildingTool extends BaseTool {
                 
                 console.log('Creating single building:', building);
                 this.toolManager.elementManager.addBuilding(building);
+                console.log('Building added to ElementManager');
                 
                 // Force a render update
-                this.toolManager.emit('elementsChanged');
+                this.toolManager.emit('redraw');
+                console.log('redraw event emitted');
             } else {
                 // Option 2: Generate multiple buildings in the area
-                console.log('Generating buildings in area:', this.previewRect);
+                // Generating buildings in area
                 const count = this.generator.generateBuildingsInArea(
                     this.previewRect.x,
                     this.previewRect.y,
                     this.previewRect.width,
                     this.previewRect.height
                 );
-                console.log(`Generated ${count} buildings in selected area`);
+                // Generated buildings in selected area
                 
                 // Force a render update
                 if (count > 0) {
-                    this.toolManager.emit('elementsChanged');
+                    this.toolManager.emit('redraw');
+                    console.log('redraw event emitted for multiple buildings');
                 }
             }
         } else if (this.isDrawing && this.hasDrawnPreview) {
-            console.log('BuildingTool: Rectangle too small or invalid (min 10x10)');
+            // Rectangle too small or invalid (min 10x10)
         }
         
         // Always reset state
@@ -100,12 +140,12 @@ export class BuildingTool extends BaseTool {
         if (key === 'g' || key === 'G') {
             // Generate buildings in all detected city blocks
             const count = this.generator.generateBuildings();
-            console.log(`Generated ${count} buildings in city blocks`);
+            // Generated buildings in city blocks
             return true;
         } else if (key === 'c' || key === 'C') {
             // Clear all buildings
             this.generator.clearBuildings();
-            console.log('Cleared all buildings');
+            // Cleared all buildings
             return true;
         }
         return false;
