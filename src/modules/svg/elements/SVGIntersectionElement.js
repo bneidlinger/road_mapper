@@ -162,6 +162,9 @@ export class SVGIntersectionElement extends SVGBaseElement {
   }
 
   addTrafficLights(connections, roadWidth) {
+    // Get traffic light configuration from intersection
+    const config = this.intersection.trafficLightConfig || {};
+    
     // Add traffic lights at configured positions
     // For 4-way intersections, add lights on opposite pairs
     if (connections.length >= 4) {
@@ -170,7 +173,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
         this.intersection,
         connections[0].angle,
         roadWidth,
-        'green'
+        'green',
+        config
       );
       this.element.appendChild(light1);
       
@@ -178,7 +182,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
         this.intersection,
         connections[2].angle,
         roadWidth,
-        'green'
+        'green',
+        config
       );
       this.element.appendChild(light2);
       
@@ -187,7 +192,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
         this.intersection,
         connections[1].angle,
         roadWidth,
-        'red'
+        'red',
+        config
       );
       this.element.appendChild(light3);
       
@@ -195,7 +201,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
         this.intersection,
         connections[3].angle,
         roadWidth,
-        'red'
+        'red',
+        config
       );
       this.element.appendChild(light4);
     } else {
@@ -206,7 +213,8 @@ export class SVGIntersectionElement extends SVGBaseElement {
           this.intersection,
           conn.angle,
           roadWidth,
-          state
+          state,
+          config
         );
         this.element.appendChild(light);
       });

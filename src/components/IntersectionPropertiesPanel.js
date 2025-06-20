@@ -119,18 +119,33 @@ export class IntersectionPropertiesPanel {
 
           <div class="property-group" id="traffic-light-config" style="display: none;">
             <label>Traffic Light Configuration</label>
-            <div class="traffic-light-options">
-              <label>Timing Mode</label>
-              <select id="traffic-timing">
-                <option value="standard">Standard</option>
-                <option value="rush_hour">Rush Hour Adaptive</option>
-                <option value="sensor">Sensor Controlled</option>
-              </select>
-              
-              <label>Cycle Time (seconds)</label>
-              <input type="number" id="traffic-cycle" min="30" max="180" value="60" step="5">
+            <div class="traffic-light-settings">
+              <p class="hint">Traffic lights automatically coordinate opposite directions</p>
+              <div class="timing-controls" style="margin-top: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <label style="flex: 1;">Green Time:</label>
+                  <input type="number" id="green-time" value="15" min="5" max="60" style="width: 60px;">
+                  <span style="color: #888;">seconds</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <label style="flex: 1;">Yellow Time:</label>
+                  <input type="number" id="yellow-time" value="3" min="2" max="5" style="width: 60px;">
+                  <span style="color: #888;">seconds</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label style="flex: 1;">Red Time:</label>
+                  <input type="number" id="red-time" value="12" min="5" max="60" style="width: 60px;">
+                  <span style="color: #888;">seconds</span>
+                </div>
+              </div>
+              <div class="cycle-info" style="margin-top: 1rem; padding: 0.75rem; background: #1a1a23; border-radius: 4px;">
+                <p style="margin: 0; color: #888; font-size: 0.875rem;">
+                  Total cycle time: <span id="total-cycle-time" style="color: #00d4ff;">30</span> seconds
+                </p>
+              </div>
             </div>
           </div>
+
 
           <div class="property-group">
             <label>Intersection ID</label>
@@ -202,21 +217,30 @@ export class IntersectionPropertiesPanel {
 
     // No longer need stop-count radio buttons
 
-    // Traffic light configuration
-    const timingSelect = this.container.querySelector('#traffic-timing');
-    const cycleInput = this.container.querySelector('#traffic-cycle');
+    // Traffic light timing configuration
+    const greenTime = this.container.querySelector('#green-time');
+    const yellowTime = this.container.querySelector('#yellow-time');
+    const redTime = this.container.querySelector('#red-time');
+    const totalCycleTime = this.container.querySelector('#total-cycle-time');
     
-    timingSelect.addEventListener('change', (e) => {
-      if (this.pendingChanges) {
-        this.pendingChanges.trafficLightConfig.timing = e.target.value;
+    const updateCycleTime = () => {
+      if (this.pendingChanges && greenTime && yellowTime && redTime && totalCycleTime) {
+        const green = parseInt(greenTime.value) || 15;
+        const yellow = parseInt(yellowTime.value) || 3;
+        const red = parseInt(redTime.value) || 12;
+        
+        this.pendingChanges.trafficLightConfig.greenTime = green;
+        this.pendingChanges.trafficLightConfig.yellowTime = yellow;
+        this.pendingChanges.trafficLightConfig.redTime = red;
+        
+        const total = green + yellow + red;
+        totalCycleTime.textContent = total;
       }
-    });
-
-    cycleInput.addEventListener('change', (e) => {
-      if (this.pendingChanges) {
-        this.pendingChanges.trafficLightConfig.cycle = parseInt(e.target.value);
-      }
-    });
+    };
+    
+    if (greenTime) greenTime.addEventListener('input', updateCycleTime);
+    if (yellowTime) yellowTime.addEventListener('input', updateCycleTime);
+    if (redTime) redTime.addEventListener('input', updateCycleTime);
   }
   
   setupElementManagerListeners() {
@@ -599,8 +623,21 @@ export class IntersectionPropertiesPanel {
     // No longer need to set stop count radio buttons
     
     // Set traffic light config
-    this.container.querySelector('#traffic-timing').value = intersection.trafficLightConfig.timing;
-    this.container.querySelector('#traffic-cycle').value = intersection.trafficLightConfig.cycle;
+    const greenTimeInput = this.container.querySelector('#green-time');
+    const yellowTimeInput = this.container.querySelector('#yellow-time');
+    const redTimeInput = this.container.querySelector('#red-time');
+    const totalCycleTimeSpan = this.container.querySelector('#total-cycle-time');
+    
+    if (greenTimeInput && intersection.trafficLightConfig) {
+      greenTimeInput.value = intersection.trafficLightConfig.greenTime || 15;
+      yellowTimeInput.value = intersection.trafficLightConfig.yellowTime || 3;
+      redTimeInput.value = intersection.trafficLightConfig.redTime || 12;
+      
+      const total = (intersection.trafficLightConfig.greenTime || 15) + 
+                    (intersection.trafficLightConfig.yellowTime || 3) + 
+                    (intersection.trafficLightConfig.redTime || 12);
+      totalCycleTimeSpan.textContent = total;
+    }
     
     // Update connected roads list
     this.updateConnectedRoadsList();

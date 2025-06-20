@@ -10,19 +10,25 @@ export class RealisticControlsRenderer {
       postWidth: 1.5
     };
     
-    // Traffic light colors and dimensions
+    // Traffic light colors and dimensions - scaled down to match stop/yield signs
     this.trafficLight = {
-      poleColor: '#404040',
+      poleColor: '#606060',
       housingColor: '#1a1a1a',
       visorColor: '#0a0a0a',
       redLight: '#ff0000',
       yellowLight: '#ffaa00',
       greenLight: '#00ff00',
-      offLight: '#333333',
-      poleWidth: 3,
-      poleHeight: 25,
-      housingWidth: 10,
-      housingHeight: 24
+      offLight: '#222222',
+      poleWidth: 2,
+      poleHeight: 20,
+      housingWidth: 8,
+      housingHeight: 20,
+      lightRadius: 2.5,
+      // Animation timing (in seconds)
+      cycleTime: 30, // Total cycle time
+      greenTime: 15,
+      yellowTime: 3,
+      redTime: 12
     };
     
     // Yield sign properties
@@ -172,37 +178,62 @@ export class RealisticControlsRenderer {
   /**
    * Creates a realistic traffic light
    */
-  createTrafficLight(center, angle, roadWidth, state = 'green') {
+  createTrafficLight(center, angle, roadWidth, state = 'green', config = null) {
+    // Create unique IDs for this light's effects
+    const uniqueId = `traffic-light-${Math.random().toString(36).substr(2, 9)}`;
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', 'traffic-light-group');
+    group.setAttribute('data-light-id', uniqueId);
+    group.setAttribute('data-current-state', state);
+    
+    // Create defs for gradients and filters specific to this light
+    const defs = this.createTrafficLightEffects(uniqueId);
+    group.appendChild(defs);
     
     // Use approach angle to position traffic light on the correct side
     const approachAngle = angle + Math.PI;
     
-    // Position the traffic light
-    const distance = roadWidth * 0.8;
-    const offsetAngle = approachAngle - Math.PI / 6; // 30 degree offset
+    // Position the traffic light to match stop/yield sign positioning
+    const distance = roadWidth * 0.9;
+    const offsetAngle = approachAngle - Math.PI / 4; // 45 degree offset
     
     const lightPos = {
-      x: center.x + Math.cos(approachAngle) * distance + Math.cos(offsetAngle) * 10,
-      y: center.y + Math.sin(approachAngle) * distance + Math.sin(offsetAngle) * 10
+      x: center.x + Math.cos(approachAngle) * distance + Math.cos(offsetAngle) * (roadWidth * 0.5),
+      y: center.y + Math.sin(approachAngle) * distance + Math.sin(offsetAngle) * (roadWidth * 0.5)
     };
     
-    // Create pole
-    const pole = this.createPost(lightPos, this.trafficLight.poleHeight, this.trafficLight.poleWidth, this.trafficLight.poleColor);
+    // Create metallic pole with enhanced effects
+    const pole = this.createMetallicPost(lightPos, this.trafficLight.poleHeight, this.trafficLight.poleWidth, uniqueId);
     group.appendChild(pole);
     
-    // Create arm extending over the road
-    const armLength = roadWidth * 0.6;
+    // Create arm extending over the road with gradient
+    const armLength = roadWidth * 0.5;
+    const armGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    // Arm shadow
+    const armShadow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    armShadow.setAttribute('x1', lightPos.x);
+    armShadow.setAttribute('y1', lightPos.y - this.trafficLight.poleHeight + 0.5);
+    armShadow.setAttribute('x2', lightPos.x + Math.cos(angle) * armLength);
+    armShadow.setAttribute('y2', lightPos.y - this.trafficLight.poleHeight + 0.5);
+    armShadow.setAttribute('stroke', '#000000');
+    armShadow.setAttribute('stroke-width', this.trafficLight.poleWidth + 1);
+    armShadow.setAttribute('stroke-linecap', 'round');
+    armShadow.setAttribute('opacity', '0.3');
+    armGroup.appendChild(armShadow);
+    
+    // Main arm
     const arm = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     arm.setAttribute('x1', lightPos.x);
     arm.setAttribute('y1', lightPos.y - this.trafficLight.poleHeight);
     arm.setAttribute('x2', lightPos.x + Math.cos(angle) * armLength);
     arm.setAttribute('y2', lightPos.y - this.trafficLight.poleHeight);
-    arm.setAttribute('stroke', this.trafficLight.poleColor);
+    arm.setAttribute('stroke', `url(#${uniqueId}-metal-gradient)`);
     arm.setAttribute('stroke-width', this.trafficLight.poleWidth);
     arm.setAttribute('stroke-linecap', 'round');
-    group.appendChild(arm);
+    armGroup.appendChild(arm);
+    
+    group.appendChild(armGroup);
     
     // Create traffic light housing at end of arm
     const housingPos = {
@@ -210,35 +241,78 @@ export class RealisticControlsRenderer {
       y: lightPos.y - this.trafficLight.poleHeight
     };
     
-    const housing = this.createTrafficLightHousing(housingPos, state);
+    const housing = this.createEnhancedTrafficLightHousing(housingPos, state, uniqueId);
     group.appendChild(housing);
     
-    // Add shadow
-    const shadow = this.createPoleShadow(lightPos, this.trafficLight.poleHeight);
+    // Add enhanced shadow
+    const shadow = this.createEnhancedSignShadow(lightPos, this.trafficLight.poleHeight * 0.8, uniqueId);
     group.insertBefore(shadow, pole);
+    
+    // Start animation cycle with config if provided
+    this.startTrafficLightAnimation(group, uniqueId, config);
     
     return group;
   }
 
   /**
-   * Creates the traffic light housing with lights
+   * Creates enhanced traffic light housing with professional visual effects
    */
-  createTrafficLightHousing(pos, state) {
+  createEnhancedTrafficLightHousing(pos, state, uniqueId) {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'traffic-light-housing');
     
-    // Main housing
+    // Shadow/depth effect
+    const shadowRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    shadowRect.setAttribute('x', pos.x - this.trafficLight.housingWidth / 2 + 0.5);
+    shadowRect.setAttribute('y', pos.y + 0.5);
+    shadowRect.setAttribute('width', this.trafficLight.housingWidth);
+    shadowRect.setAttribute('height', this.trafficLight.housingHeight);
+    shadowRect.setAttribute('rx', '1.5');
+    shadowRect.setAttribute('fill', '#000000');
+    shadowRect.setAttribute('opacity', '0.4');
+    shadowRect.setAttribute('filter', 'blur(1px)');
+    group.appendChild(shadowRect);
+    
+    // Main housing with gradient
     const housing = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     housing.setAttribute('x', pos.x - this.trafficLight.housingWidth / 2);
     housing.setAttribute('y', pos.y);
     housing.setAttribute('width', this.trafficLight.housingWidth);
     housing.setAttribute('height', this.trafficLight.housingHeight);
-    housing.setAttribute('rx', '2');
-    housing.setAttribute('fill', this.trafficLight.housingColor);
-    housing.setAttribute('stroke', '#000000');
-    housing.setAttribute('stroke-width', '0.5');
+    housing.setAttribute('rx', '1.5');
+    housing.setAttribute('fill', `url(#${uniqueId}-housing-gradient)`);
+    housing.setAttribute('stroke', '#0a0a0a');
+    housing.setAttribute('stroke-width', '0.3');
     group.appendChild(housing);
     
-    // Add visor
+    // Add reflective highlight
+    const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    highlight.setAttribute('x', pos.x - this.trafficLight.housingWidth / 2 + 1);
+    highlight.setAttribute('y', pos.y + 1);
+    highlight.setAttribute('width', this.trafficLight.housingWidth * 0.3);
+    highlight.setAttribute('height', this.trafficLight.housingHeight - 2);
+    highlight.setAttribute('rx', '0.5');
+    highlight.setAttribute('fill', '#ffffff');
+    highlight.setAttribute('opacity', '0.1');
+    group.appendChild(highlight);
+    
+    // Add visor with 3D effect
+    const visorGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    // Visor shadow
+    const visorShadow = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    visorShadow.setAttribute('x', pos.x - this.trafficLight.housingWidth / 2 - 1.5);
+    visorShadow.setAttribute('y', pos.y - 1.5);
+    visorShadow.setAttribute('width', this.trafficLight.housingWidth + 3);
+    visorShadow.setAttribute('height', this.trafficLight.housingHeight + 3);
+    visorShadow.setAttribute('rx', '2');
+    visorShadow.setAttribute('fill', 'none');
+    visorShadow.setAttribute('stroke', '#000000');
+    visorShadow.setAttribute('stroke-width', '1.5');
+    visorShadow.setAttribute('opacity', '0.3');
+    visorGroup.appendChild(visorShadow);
+    
+    // Main visor
     const visor = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     visor.setAttribute('x', pos.x - this.trafficLight.housingWidth / 2 - 1);
     visor.setAttribute('y', pos.y - 1);
@@ -246,46 +320,69 @@ export class RealisticControlsRenderer {
     visor.setAttribute('height', this.trafficLight.housingHeight + 2);
     visor.setAttribute('rx', '2');
     visor.setAttribute('fill', 'none');
-    visor.setAttribute('stroke', this.trafficLight.visorColor);
+    visor.setAttribute('stroke', '#0a0a0a');
     visor.setAttribute('stroke-width', '1');
-    group.appendChild(visor);
+    visorGroup.appendChild(visor);
     
-    // Add lights
-    const lightRadius = 3;
+    group.appendChild(visorGroup);
+    
+    // Add lights with enhanced effects
+    const lightRadius = this.trafficLight.lightRadius;
     const lightSpacing = this.trafficLight.housingHeight / 3;
     
-    // Red light
-    const redLight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    redLight.setAttribute('cx', pos.x);
-    redLight.setAttribute('cy', pos.y + lightSpacing / 2);
-    redLight.setAttribute('r', lightRadius);
-    redLight.setAttribute('fill', state === 'red' ? this.trafficLight.redLight : this.trafficLight.offLight);
-    if (state === 'red') {
-      redLight.setAttribute('filter', 'url(#glow-red)');
-    }
-    group.appendChild(redLight);
-    
-    // Yellow light
-    const yellowLight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    yellowLight.setAttribute('cx', pos.x);
-    yellowLight.setAttribute('cy', pos.y + lightSpacing * 1.5);
-    yellowLight.setAttribute('r', lightRadius);
-    yellowLight.setAttribute('fill', state === 'yellow' ? this.trafficLight.yellowLight : this.trafficLight.offLight);
-    if (state === 'yellow') {
-      yellowLight.setAttribute('filter', 'url(#glow-yellow)');
-    }
-    group.appendChild(yellowLight);
-    
-    // Green light
-    const greenLight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    greenLight.setAttribute('cx', pos.x);
-    greenLight.setAttribute('cy', pos.y + lightSpacing * 2.5);
-    greenLight.setAttribute('r', lightRadius);
-    greenLight.setAttribute('fill', state === 'green' ? this.trafficLight.greenLight : this.trafficLight.offLight);
-    if (state === 'green') {
-      greenLight.setAttribute('filter', 'url(#glow-green)');
-    }
-    group.appendChild(greenLight);
+    // Create light groups for each signal
+    const lights = ['red', 'yellow', 'green'];
+    lights.forEach((color, index) => {
+      const lightGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      lightGroup.setAttribute('class', `traffic-light-${color}`);
+      lightGroup.setAttribute('data-light-color', color);
+      
+      const cy = pos.y + lightSpacing * (index + 0.5);
+      
+      // Light bezel
+      const bezel = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      bezel.setAttribute('cx', pos.x);
+      bezel.setAttribute('cy', cy);
+      bezel.setAttribute('r', lightRadius + 0.5);
+      bezel.setAttribute('fill', '#0a0a0a');
+      lightGroup.appendChild(bezel);
+      
+      // Inner reflector
+      const reflector = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      reflector.setAttribute('cx', pos.x);
+      reflector.setAttribute('cy', cy);
+      reflector.setAttribute('r', lightRadius + 0.2);
+      reflector.setAttribute('fill', '#1a1a1a');
+      lightGroup.appendChild(reflector);
+      
+      // Main light
+      const light = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      light.setAttribute('cx', pos.x);
+      light.setAttribute('cy', cy);
+      light.setAttribute('r', lightRadius);
+      light.setAttribute('class', `light-bulb light-${color}`);
+      
+      const isActive = state === color;
+      const fillColor = isActive ? this.trafficLight[`${color}Light`] : this.trafficLight.offLight;
+      light.setAttribute('fill', fillColor);
+      
+      if (isActive) {
+        light.setAttribute('filter', `url(#${uniqueId}-${color}-glow)`);
+      }
+      
+      lightGroup.appendChild(light);
+      
+      // Add lens highlight
+      const lensHighlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      lensHighlight.setAttribute('cx', pos.x - lightRadius * 0.3);
+      lensHighlight.setAttribute('cy', cy - lightRadius * 0.3);
+      lensHighlight.setAttribute('r', lightRadius * 0.3);
+      lensHighlight.setAttribute('fill', '#ffffff');
+      lensHighlight.setAttribute('opacity', isActive ? '0.4' : '0.1');
+      lightGroup.appendChild(lensHighlight);
+      
+      group.appendChild(lightGroup);
+    });
     
     return group;
   }
@@ -763,5 +860,187 @@ export class RealisticControlsRenderer {
     filter.appendChild(feMerge);
     
     return filter;
+  }
+
+  /**
+   * Creates traffic light-specific effects (gradients, filters, glows)
+   */
+  createTrafficLightEffects(uniqueId) {
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    
+    // Housing gradient for 3D effect
+    const housingGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    housingGradient.setAttribute('id', `${uniqueId}-housing-gradient`);
+    housingGradient.setAttribute('x1', '0%');
+    housingGradient.setAttribute('y1', '0%');
+    housingGradient.setAttribute('x2', '100%');
+    housingGradient.setAttribute('y2', '0%');
+    
+    const hStop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    hStop1.setAttribute('offset', '0%');
+    hStop1.setAttribute('stop-color', '#2a2a2a');
+    
+    const hStop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    hStop2.setAttribute('offset', '50%');
+    hStop2.setAttribute('stop-color', '#1a1a1a');
+    
+    const hStop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    hStop3.setAttribute('offset', '100%');
+    hStop3.setAttribute('stop-color', '#0a0a0a');
+    
+    housingGradient.appendChild(hStop1);
+    housingGradient.appendChild(hStop2);
+    housingGradient.appendChild(hStop3);
+    defs.appendChild(housingGradient);
+    
+    // Metal gradient for pole and arm
+    const metalGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    metalGradient.setAttribute('id', `${uniqueId}-metal-gradient`);
+    metalGradient.setAttribute('x1', '0%');
+    metalGradient.setAttribute('y1', '0%');
+    metalGradient.setAttribute('x2', '100%');
+    metalGradient.setAttribute('y2', '0%');
+    
+    const mStop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    mStop1.setAttribute('offset', '0%');
+    mStop1.setAttribute('stop-color', '#808080');
+    
+    const mStop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    mStop2.setAttribute('offset', '50%');
+    mStop2.setAttribute('stop-color', '#606060');
+    
+    const mStop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    mStop3.setAttribute('offset', '100%');
+    mStop3.setAttribute('stop-color', '#404040');
+    
+    metalGradient.appendChild(mStop1);
+    metalGradient.appendChild(mStop2);
+    metalGradient.appendChild(mStop3);
+    defs.appendChild(metalGradient);
+    
+    // Create glow filters for each light color
+    const colors = {
+      red: { color: '#ff0000', intensity: '3' },
+      yellow: { color: '#ffaa00', intensity: '3' },
+      green: { color: '#00ff00', intensity: '3' }
+    };
+    
+    Object.entries(colors).forEach(([name, config]) => {
+      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filter.setAttribute('id', `${uniqueId}-${name}-glow`);
+      filter.setAttribute('x', '-50%');
+      filter.setAttribute('y', '-50%');
+      filter.setAttribute('width', '200%');
+      filter.setAttribute('height', '200%');
+      
+      const blur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+      blur.setAttribute('stdDeviation', config.intensity);
+      blur.setAttribute('result', 'coloredBlur');
+      
+      const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+      const mergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      mergeNode1.setAttribute('in', 'coloredBlur');
+      const mergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+      mergeNode2.setAttribute('in', 'SourceGraphic');
+      
+      merge.appendChild(mergeNode1);
+      merge.appendChild(mergeNode2);
+      filter.appendChild(blur);
+      filter.appendChild(merge);
+      
+      defs.appendChild(filter);
+    });
+    
+    return defs;
+  }
+
+  /**
+   * Starts the traffic light animation cycle
+   */
+  startTrafficLightAnimation(lightGroup, uniqueId, config = {}) {
+    // Get all light elements
+    const redLight = lightGroup.querySelector('.light-red');
+    const yellowLight = lightGroup.querySelector('.light-yellow');
+    const greenLight = lightGroup.querySelector('.light-green');
+    
+    if (!redLight || !yellowLight || !greenLight) return;
+    
+    // Calculate cycle times in milliseconds (use config or defaults)
+    const greenTime = (config.greenTime || this.trafficLight.greenTime) * 1000;
+    const yellowTime = (config.yellowTime || this.trafficLight.yellowTime) * 1000;
+    const redTime = (config.redTime || this.trafficLight.redTime) * 1000;
+    const totalTime = greenTime + yellowTime + redTime;
+    
+    // Get initial state from the light group
+    const initialState = lightGroup.getAttribute('data-current-state') || 'red';
+    let startDelay = 0;
+    
+    // Calculate start delay based on initial state
+    if (initialState === 'green') {
+      startDelay = 0;
+    } else if (initialState === 'red') {
+      // Start in red phase - delay until next green
+      startDelay = redTime;
+    }
+    
+    // Create animation function
+    const animateLights = () => {
+      let currentTime = 0;
+      
+      // Green phase
+      setTimeout(() => {
+        this.setLightState(lightGroup, 'green', uniqueId);
+      }, currentTime);
+      currentTime += greenTime;
+      
+      // Yellow phase
+      setTimeout(() => {
+        this.setLightState(lightGroup, 'yellow', uniqueId);
+      }, currentTime);
+      currentTime += yellowTime;
+      
+      // Red phase
+      setTimeout(() => {
+        this.setLightState(lightGroup, 'red', uniqueId);
+      }, currentTime);
+    };
+    
+    // Start initial animation with delay for coordination
+    setTimeout(() => {
+      animateLights();
+      // Repeat animation cycle
+      setInterval(animateLights, totalTime);
+    }, startDelay);
+  }
+
+  /**
+   * Sets the state of a traffic light
+   */
+  setLightState(lightGroup, state, uniqueId) {
+    const lights = lightGroup.querySelectorAll('.light-bulb');
+    
+    lights.forEach(light => {
+      const color = light.classList.contains('light-red') ? 'red' :
+                   light.classList.contains('light-yellow') ? 'yellow' : 'green';
+      
+      const isActive = color === state;
+      light.setAttribute('fill', isActive ? this.trafficLight[`${color}Light`] : this.trafficLight.offLight);
+      
+      if (isActive) {
+        light.setAttribute('filter', `url(#${uniqueId}-${color}-glow)`);
+      } else {
+        light.removeAttribute('filter');
+      }
+      
+      // Update lens highlight
+      const lightGroupElement = light.parentElement;
+      const highlight = lightGroupElement.querySelector('circle:last-child');
+      if (highlight) {
+        highlight.setAttribute('opacity', isActive ? '0.4' : '0.1');
+      }
+    });
+    
+    // Update data attribute
+    lightGroup.setAttribute('data-current-state', state);
   }
 }

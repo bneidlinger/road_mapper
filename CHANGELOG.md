@@ -5,6 +5,37 @@ All notable changes to Road Mapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0-alpha] - 2025-01-20
+
+### Added
+
+#### Traffic Control Enhancements
+- Implemented professional-quality yield signs with 3D effects and metallic posts
+- Enhanced stop signs with realistic textures, gradients, and depth effects
+- Added traffic light animations with configurable green/yellow/red timing
+- Traffic lights now feature coordinated cycles (opposite directions synchronized)
+- All control elements scaled consistently for visual harmony
+
+#### Intersection Configuration
+- Added yield sign placement interface in properties panel
+- Implemented traffic light timing configuration with real-time cycle calculation
+- Enhanced visual quality of all traffic control elements with shadows and glows
+
+#### GitHub Pages Deployment
+- Created complete deployment infrastructure for GitHub Pages
+- Added GitHub Actions workflow for automatic deployment on push
+- Configured webpack for production builds with correct subdirectory paths
+- Created deployment documentation and scripts
+
+### Changed
+- Traffic lights reduced in scale to match stop/yield sign proportions
+- All traffic control elements now use enhanced metallic posts with gradients
+- Improved shadow and depth effects across all control elements
+
+### Fixed
+- GitHub Actions workflow updated to use non-deprecated action versions
+- Production build now correctly handles assets for GitHub Pages subdirectory
+
 ## [0.1.0-alpha] - 2024-01-19
 
 ### Added
