@@ -210,6 +210,20 @@ body {
   pointer-events: stroke;
 }
 
+/* When building tool is active, disable pointer events on all ground elements */
+.building-tool-active .layer.ground-layer > * {
+  pointer-events: none !important;
+}
+
+/* Also disable pointer events on specific road elements */
+.building-tool-active .road-path,
+.building-tool-active .sidewalk-path,
+.building-tool-active .curb-path,
+.building-tool-active .shoulder-path,
+.building-tool-active .intersection-element {
+  pointer-events: none !important;
+}
+
 .sidewalk-path {
   opacity: 0.8;
 }
@@ -232,6 +246,62 @@ body {
 
 .element.selected .selection-highlight {
   animation: pulse 2s ease-in-out infinite;
+}
+
+/* Building styles */
+.building-element {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.building-base {
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.building-shadow {
+  pointer-events: none;
+}
+
+.building-roof {
+  pointer-events: none;
+}
+
+/* Building hover effects */
+.building-element:hover .building-base {
+  filter: brightness(1.1);
+  stroke-width: 2;
+}
+
+/* Building type specific styles */
+.building-residential {
+  fill: #E8D4B0;
+  stroke: #B8A480;
+}
+
+.building-commercial {
+  fill: #C5B8A5;
+  stroke: #958875;
+}
+
+.building-office {
+  fill: #A0B5C8;
+  stroke: #708598;
+}
+
+.building-industrial {
+  fill: #B0B0B0;
+  stroke: #808080;
+}
+
+.building-civic {
+  fill: #C8B0D4;
+  stroke: #9880A4;
+}
+
+.building-park {
+  fill: #A5D4A5;
+  stroke: #75A475;
 }
 
 @keyframes pulse {

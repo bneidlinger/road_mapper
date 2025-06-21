@@ -13,7 +13,7 @@ export class RealisticIntersectionRenderer {
   render(intersection, connections, roadWidth, viewport) {
     const elements = [];
     
-    console.log('RealisticIntersectionRenderer: Rendering intersection at', intersection.x, intersection.y);
+    // Rendering intersection
     
     // Sort connections by angle for proper rendering
     const sortedConnections = [...connections].sort((a, b) => a.angle - b.angle);
@@ -277,14 +277,14 @@ export class RealisticIntersectionRenderer {
       // Add stop line
       if (intersection.controlType === 'stop_sign' && 
           intersection.stopSignConfig.positions.includes(index)) {
-        console.log('Creating stop line for position', index, 'angle:', angle * 180 / Math.PI);
+        // Creating stop line
         const stopLine = this.createStopLine(center, angle, roadWidth);
         elements.push(stopLine);
       }
       
       // Add crosswalk for major intersections (traffic lights only for now)
       if (connections.length >= 4 && intersection.controlType === 'traffic_light') {
-        console.log('Creating crosswalk for angle:', angle * 180 / Math.PI);
+        // Creating crosswalk
         const crosswalk = this.createCrosswalk(center, angle, roadWidth);
         elements.push(...crosswalk);
       }

@@ -35,12 +35,18 @@ export class SelectTool extends BaseTool {
       const dx = worldPos.x - this.dragStart.x;
       const dy = worldPos.y - this.dragStart.y;
       
-      // Only allow moving roads, not intersections
+      // Handle different element types
       if (this.selectedElement.points) { // Road
         for (const point of this.selectedElement.points) {
           point.x += dx;
           point.y += dy;
         }
+        this.dragStart = { x: worldPos.x, y: worldPos.y };
+        this.toolManager.emit('redraw');
+      } else if (this.selectedElement.width !== undefined && this.selectedElement.height !== undefined) {
+        // Building - allow moving
+        this.selectedElement.x += dx;
+        this.selectedElement.y += dy;
         this.dragStart = { x: worldPos.x, y: worldPos.y };
         this.toolManager.emit('redraw');
       }
@@ -60,12 +66,11 @@ export class SelectTool extends BaseTool {
     this.clearSelection();
     this.selectedElement = element;
     element.selected = true;
-    console.log('SelectTool: Selected element type:', element.connectedRoads ? 'intersection' : 'road');
-    console.log('SelectTool: Selected element', element);
+    // Selected element
     // Emit through both toolManager and elementManager for compatibility
     this.toolManager.emit('elementSelected', element);
     this.elementManager.emit('elementSelected', element);
-    console.log('SelectTool: Emitted elementSelected event');
+    // Emitted elementSelected event
     this.toolManager.emit('redraw');
   }
 

@@ -10,6 +10,10 @@ export class BuildingTool extends BaseTool {
         this.generator = new BuildingGenerator(this.toolManager.elementManager);
         this.isDrawing = false;
         this.hasDrawnPreview = false;
+        this.mouseIsDown = false; // Track mouse state internally
+        
+        // Bind window mouse up handler
+        this.handleWindowMouseUp = this.handleWindowMouseUp.bind(this);
     }
 
     onMouseDown(event, worldPos) {
@@ -20,6 +24,7 @@ export class BuildingTool extends BaseTool {
         });
         // Only start drawing on left mouse button
         if (event.button === 0) {
+            this.mouseIsDown = true; // Track mouse state
             this.isDrawing = true;
             this.startPoint = { ...worldPos };
             this.previewRect = null; // Reset preview rect on new draw
@@ -29,16 +34,11 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseMove(event, worldPos) {
-        // Reduced logging - only log important state changes
+        // Check for mouse button state issues (keeping for debugging)
         
-        // Only show preview if mouse button is still held down (button 0 = left mouse)
-        if (this.isDrawing && this.startPoint) {
-            // Check button state
-            if (event.buttons !== 1) {
-                console.log('BuildingTool: Mouse button not pressed, buttons:', event.buttons);
-            }
-            
-            // Show preview rectangle regardless of button state for debugging
+        // Only show preview if we're drawing
+        if (this.isDrawing && this.startPoint && this.mouseIsDown) {
+            // Update preview rectangle
             const width = Math.abs(worldPos.x - this.startPoint.x);
             const height = Math.abs(worldPos.y - this.startPoint.y);
             
@@ -63,18 +63,14 @@ export class BuildingTool extends BaseTool {
             this.hasDrawnPreview = true;
             this.toolManager.emit('redraw');
         }
-        
-        if (this.isDrawing && event.buttons === 0) {
-            // Mouse button was released outside of normal flow, cancel drawing
-            console.log('BuildingTool: Mouse released during move, canceling');
-            this.cancelAction();
-        }
     }
 
     onMouseUp(event, worldPos) {
         console.log('BuildingTool.onMouseUp called:', {
             button: event.button,
+            buttons: event.buttons,
             isDrawing: this.isDrawing,
+            mouseIsDown: this.mouseIsDown,
             hasDrawnPreview: this.hasDrawnPreview,
             startPoint: this.startPoint,
             previewRect: this.previewRect,
@@ -84,7 +80,7 @@ export class BuildingTool extends BaseTool {
         });
         
         // Only process if we were actually drawing, had a preview, and it's the left mouse button
-        if (event.button === 0 && this.isDrawing && this.hasDrawnPreview && 
+        if (event.button === 0 && this.mouseIsDown && this.isDrawing && this.hasDrawnPreview && 
             this.startPoint && this.previewRect && 
             this.previewRect.width > 10 && this.previewRect.height > 10) {
             
@@ -109,19 +105,21 @@ export class BuildingTool extends BaseTool {
                 console.log('redraw event emitted');
             } else {
                 // Option 2: Generate multiple buildings in the area
-                // Generating buildings in area
+                console.log('Generating buildings in area:', this.previewRect);
                 const count = this.generator.generateBuildingsInArea(
                     this.previewRect.x,
                     this.previewRect.y,
                     this.previewRect.width,
                     this.previewRect.height
                 );
-                // Generated buildings in selected area
+                console.log(`Generated ${count} buildings in selected area`);
                 
                 // Force a render update
                 if (count > 0) {
                     this.toolManager.emit('redraw');
                     console.log('redraw event emitted for multiple buildings');
+                } else {
+                    console.log('No buildings were generated - check placement constraints');
                 }
             }
         } else if (this.isDrawing && this.hasDrawnPreview) {
@@ -129,6 +127,7 @@ export class BuildingTool extends BaseTool {
         }
         
         // Always reset state
+        this.mouseIsDown = false; // Reset mouse state
         this.startPoint = null;
         this.previewRect = null;
         this.isDrawing = false;
@@ -179,10 +178,42 @@ export class BuildingTool extends BaseTool {
     }
 
     cancelAction() {
+        this.mouseIsDown = false; // Reset mouse state
         this.startPoint = null;
         this.previewRect = null;
         this.isDrawing = false;
         this.hasDrawnPreview = false;
         this.toolManager.emit('redraw');
+    }
+    
+    activate() {
+        super.activate();
+        // Reset state on activation to ensure clean start
+        this.mouseIsDown = false;
+        this.isDrawing = false;
+        this.startPoint = null;
+        this.previewRect = null;
+        this.hasDrawnPreview = false;
+        // Add global mouse up listener to catch events that might be missed
+        window.addEventListener('mouseup', this.handleWindowMouseUp);
+        console.log('BuildingTool activated - state reset');
+    }
+    
+    deactivate() {
+        super.deactivate();
+        // Remove global listener
+        window.removeEventListener('mouseup', this.handleWindowMouseUp);
+        // Clean up any in-progress drawing
+        this.cancelAction();
+        // Window mouseup listener removed
+    }
+    
+    handleWindowMouseUp(event) {
+        console.log('Window mouseup detected in BuildingTool');
+        if (this.isDrawing && this.mouseIsDown) {
+            // Convert to world position
+            const worldPos = this.toolManager.getWorldPosition(event);
+            this.onMouseUp(event, worldPos);
+        }
     }
 }

@@ -5,6 +5,40 @@ All notable changes to Road Mapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha] - 2025-01-22
+
+### Added
+
+#### Building Properties Panel
+- Created comprehensive building properties panel with professional UI
+- Added building type selection: Residential, Commercial, Industrial, Office
+- Implemented type-specific customization options:
+  - Residential: Style (single-family, townhouse, apartment, condo) and unit count
+  - Commercial: Business type (retail, restaurant, grocery, bank, hotel) and parking spaces
+  - Industrial: Facility type (warehouse, factory, distribution center) and loading docks
+  - Office: Office type (corporate HQ, professional, medical, tech campus) and occupancy
+- Added building customization controls:
+  - Floors adjustment (1-50)
+  - Rotation control with visual slider (-180° to +180°)
+  - Custom color override option with color picker
+- Implemented building selection with visual feedback (green outline with glow effect)
+- Added delete building functionality from properties panel
+- Buildings can now be moved by dragging when selected
+
+### Fixed
+- Fixed webpack/babel configuration to support optional chaining syntax (`?.`)
+- Fixed building placement logic preventing buildings from being placed when roads exist
+- Corrected intersection bounds format mismatch (was returning {x,y,width,height} instead of {minX,minY,maxX,maxY})
+- Fixed mouse interaction bug where first click with building tool didn't respond properly
+- Resolved properties panel visibility issue by creating separate containers for each panel type
+
+### Technical
+- Added babel-loader with @babel/preset-env for modern JavaScript syntax support
+- Created SVGBuildingElement class following the same architectural pattern as roads/intersections
+- Implemented proper bounds overlap detection for building placement constraints
+- Added building selection glow filter to SVG filters factory
+- Updated Building class to support custom properties and color overrides
+
 ## [0.2.0-alpha] - 2025-01-20
 
 ### Added

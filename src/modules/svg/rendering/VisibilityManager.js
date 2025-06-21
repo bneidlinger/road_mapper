@@ -82,7 +82,7 @@ export class VisibilityManager {
    */
   updateElementDetails(zoom, svgElements) {
     const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
-    console.log(`VisibilityManager.updateElementDetails: ${svgElements.size} elements, zoom: ${zoom}, birdsEye: ${isBirdsEye}`);
+    // Update element details based on zoom level
     
     svgElements.forEach((item, id) => {
       // Handle both direct elements and wrapped elements (like buildings)
@@ -92,7 +92,7 @@ export class VisibilityManager {
       // Special handling for SVGRoadElement and SVGIntersectionElement which are stored directly
       if (item && item.updateDetailLevel) {
         // It's a direct element (road or intersection)
-        console.log(`Updating ${item.constructor.name} ${id} directly`);
+        // Update element directly
         item.updateDetailLevel(zoom, isBirdsEye);
       } else if (dataObject && dataObject.updateDetailLevel) {
         // It's a wrapped element
@@ -112,11 +112,11 @@ export class VisibilityManager {
     
     if (firstRoad) {
       const roadEl = firstRoad.road || firstRoad;
-      console.log('Sample road element state:', {
-        id: roadEl.road?.id,
-        mainPathColor: roadEl.mainPath?.getAttribute('stroke'),
-        mainPathOpacity: roadEl.mainPath?.getAttribute('opacity')
-      });
+      // Sample road element state: {
+      //   id: roadEl.road?.id,
+      //   mainPathColor: roadEl.mainPath?.getAttribute('stroke'),
+      //   mainPathOpacity: roadEl.mainPath?.getAttribute('opacity')
+      // };
     }
   }
 

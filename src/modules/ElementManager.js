@@ -47,6 +47,16 @@ export class ElementManager extends EventEmitter {
     return Array.from(this.roads.values());
   }
 
+  findRoadByEndpoint(x, y, tolerance = 10) {
+    for (const road of this.roads.values()) {
+      const endpoint = road.isNearEndpoint(x, y, tolerance);
+      if (endpoint) {
+        return { road, endpoint };
+      }
+    }
+    return null;
+  }
+
   createIntersectionAt(x, y, connectedRoadIds = []) {
     const existingIntersection = this.getIntersectionAt(x, y, 10);
     
@@ -83,7 +93,7 @@ export class ElementManager extends EventEmitter {
       intersection.addConnection(roadId, { x, y });
     }
     
-    console.log('Creating intersection with', allConnectedRoads.size, 'connected roads:', Array.from(allConnectedRoads));
+    // Creating intersection with connected roads
     
     this.intersections.set(intersectionId, intersection);
     this.emit('intersectionAdded', intersection);
@@ -138,14 +148,9 @@ export class ElementManager extends EventEmitter {
   }
 
   getElementAt(x, y) {
-    console.log('ElementManager.getElementAt called with:', x, y);
-    console.log('Number of intersections:', this.intersections.size);
-    
     // Check intersections first (higher priority)
     for (const intersection of this.intersections.values()) {
-      console.log('Checking intersection:', intersection.id, 'at', intersection.x, intersection.y, 'radius', intersection.radius);
       if (intersection.hitTest(x, y)) {
-        console.log('Hit intersection:', intersection.id);
         return intersection;
       }
     }
@@ -153,7 +158,6 @@ export class ElementManager extends EventEmitter {
     // Then check buildings
     for (const building of this.buildings.values()) {
       if (building.hitTest({ x, y })) {
-        console.log('Hit building:', building.id);
         return building;
       }
     }
@@ -161,12 +165,10 @@ export class ElementManager extends EventEmitter {
     // Finally check roads
     for (const road of this.roads.values()) {
       if (road.hitTest(x, y)) {
-        console.log('Hit road:', road.id);
         return road;
       }
     }
     
-    console.log('No element found at position');
     return null;
   }
 

@@ -4,6 +4,7 @@ import { SVGRenderer } from './modules/svg/SVGRenderer.js';
 import { Toolbar } from './components/Toolbar.js';
 import { StatusBar } from './components/StatusBar.js';
 import { IntersectionPropertiesPanel } from './components/IntersectionPropertiesPanel.js';
+import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
 import { Store } from './core/Store.js';
 import { TOOLS } from './core/constants.js';
 import { Grid } from './modules/grid/Grid.js';
@@ -19,6 +20,7 @@ export class RoadMapperApp {
     this.toolbar = null;
     this.statusBar = null;
     this.intersectionPropertiesPanel = null;
+    this.buildingPropertiesPanel = null;
     this.store = null;
     
     this.init();
@@ -26,7 +28,7 @@ export class RoadMapperApp {
 
   init() {
     try {
-      console.log('Initializing Road Mapper...');
+      // Initializing Road Mapper
       
       // Create container structure
       const container = document.getElementById(this.containerId);
@@ -59,8 +61,49 @@ export class RoadMapperApp {
       this.toolbar = new Toolbar('toolbar-container', this.toolManager);
       this.statusBar = new StatusBar('status-bar-container', this.viewport, this.grid);
       
-      // Initialize properties panel
+      // Initialize properties panels
       this.intersectionPropertiesPanel = new IntersectionPropertiesPanel(this.elementManager);
+      this.buildingPropertiesPanel = new BuildingPropertiesPanel();
+      
+      // Add building properties panel to DOM
+      container.appendChild(this.buildingPropertiesPanel.getElement());
+      
+      // Set up building properties panel events
+      this.buildingPropertiesPanel.on('update-building', (data) => {
+        const { building, changes } = data;
+        building.updateProperties(changes);
+        this.svgRenderer.updateBuilding(building);
+      });
+      
+      this.buildingPropertiesPanel.on('delete-building', (building) => {
+        this.elementManager.removeBuilding(building.id);
+      });
+      
+      // Handle element selection events
+      this.toolManager.on('elementSelected', (element) => {
+        console.log('RoadMapperApp: elementSelected event received:', element);
+        if (element.width !== undefined && element.height !== undefined) {
+          // It's a building
+          console.log('RoadMapperApp: Detected building selection');
+          this.buildingPropertiesPanel.show(element);
+          this.intersectionPropertiesPanel.hide();
+        } else if (element.connectedRoads !== undefined) {
+          // It's an intersection
+          console.log('RoadMapperApp: Detected intersection selection');
+          this.intersectionPropertiesPanel.show(element);
+          this.buildingPropertiesPanel.hide();
+        } else {
+          // It's a road or something else
+          console.log('RoadMapperApp: Detected other element selection');
+          this.buildingPropertiesPanel.hide();
+          this.intersectionPropertiesPanel.hide();
+        }
+      });
+      
+      this.toolManager.on('elementDeselected', () => {
+        this.buildingPropertiesPanel.hide();
+        this.intersectionPropertiesPanel.hide();
+      });
       
       // Initialize store
       this.store = Store.getInstance();
@@ -71,7 +114,7 @@ export class RoadMapperApp {
       // Set default tool
       this.toolManager.setActiveTool(TOOLS.SELECT);
       
-      console.log('Road Mapper initialized successfully');
+      // Road Mapper initialized successfully
       
       // Also expose the renderer for easier access
       this.renderer = this.svgRenderer;

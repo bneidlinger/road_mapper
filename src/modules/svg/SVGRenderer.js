@@ -2,6 +2,7 @@ import { SVGManager } from './SVGManager.js';
 import { SVGViewport } from './SVGViewport.js';
 import { SVGRoadElement } from './elements/SVGRoadElement.js';
 import { SVGIntersectionElement } from './elements/SVGIntersectionElement.js';
+import { SVGBuildingElement } from './elements/SVGBuildingElement.js';
 import { ROAD_COLORS } from '../../core/constants.js';
 import { ZOOM_THRESHOLDS } from '../effects/EffectConstants.js';
 import { SVGFiltersFactory } from './effects/SVGFiltersFactory.js';
@@ -39,6 +40,7 @@ export class SVGRenderer {
     // Add filters
     this.svgManager.addDef(SVGFiltersFactory.createGlowFilter());
     this.svgManager.addDef(SVGFiltersFactory.createCircuitGlowFilter());
+    this.svgManager.addDef(SVGFiltersFactory.createBuildingSelectionGlow());
     
     // Add patterns
     SVGPatternsFactory.createAsphaltPattern(this.svgManager);
@@ -52,6 +54,7 @@ export class SVGRenderer {
     // Element manager events
     this.elementManager.on('roadAdded', (road) => this.addRoad(road));
     this.elementManager.on('roadRemoved', (road) => this.removeRoad(road));
+    this.elementManager.on('roadUpdated', (road) => this.updateRoad(road));
     this.elementManager.on('intersectionAdded', (intersection) => this.addIntersection(intersection));
     this.elementManager.on('intersectionUpdated', (intersection) => this.updateIntersection(intersection));
     this.elementManager.on('intersectionRemoved', (intersection) => this.removeIntersection(intersection));
@@ -131,6 +134,22 @@ export class SVGRenderer {
     }
   }
 
+  updateRoad(road) {
+    const svgRoad = this.svgElements.get(road.id);
+    if (svgRoad) {
+      // Remove the old element
+      svgRoad.remove();
+      
+      // Create and add the updated element
+      const element = svgRoad.createElement(this.svgManager);
+      this.svgManager.addToLayer('ground', element);
+      
+      // Update detail level
+      const isBirdsEye = this.viewport.isBirdsEyeMode();
+      svgRoad.updateDetailLevel(this.viewport.zoom, isBirdsEye);
+    }
+  }
+
   addIntersection(intersection) {
     const svgIntersection = new SVGIntersectionElement(intersection, this.viewport, this.elementManager);
     
@@ -169,7 +188,6 @@ export class SVGRenderer {
         const roadId = connection.roadId;
         const svgRoad = this.svgElements.get(roadId);
         if (svgRoad && svgRoad.updateDetailLevel) {
-          console.log('Updating connected road after intersection update:', roadId);
           svgRoad.updateDetailLevel(this.viewport.zoom);
         }
       }
@@ -184,9 +202,13 @@ export class SVGRenderer {
   }
 
   addBuilding(building) {
-    const element = building.draw();
-    this.svgElements.set(building.id, { element, building });
-    this.svgManager.addToLayer('ground', element);
+    // Create SVG building element using the new wrapper class
+    const svgBuilding = new SVGBuildingElement(building, this.svgManager);
+    this.svgElements.set(building.id, svgBuilding);
+    this.svgManager.addToLayer('ground', svgBuilding.getElement());
+    
+    // Update detail level based on current zoom
+    svgBuilding.updateDetailLevel(this.viewport.zoom);
     
     // Force visibility update
     this.updateVisibility();
@@ -194,8 +216,8 @@ export class SVGRenderer {
 
   removeBuilding(building) {
     const svgBuilding = this.svgElements.get(building.id);
-    if (svgBuilding && svgBuilding.element) {
-      svgBuilding.element.remove();
+    if (svgBuilding) {
+      svgBuilding.destroy();
       this.svgElements.delete(building.id);
     }
   }
@@ -260,6 +282,23 @@ export class SVGRenderer {
     if (svgElement) {
       svgElement.road = element; // Update reference
       svgElement.update();
+    }
+  }
+
+  updateBuilding(building) {
+    const svgBuilding = this.svgElements.get(building.id);
+    if (svgBuilding) {
+      // Remove old element
+      svgBuilding.destroy();
+      this.svgElements.delete(building.id);
+      
+      // Create new element with updated properties
+      const newSvgBuilding = new SVGBuildingElement(building, this.svgManager);
+      this.svgElements.set(building.id, newSvgBuilding);
+      this.svgManager.addToLayer('ground', newSvgBuilding.getElement());
+      
+      // Update detail level
+      newSvgBuilding.updateDetailLevel(this.viewport.zoom);
     }
   }
 }

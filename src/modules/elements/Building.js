@@ -14,7 +14,11 @@ export class Building {
         // Building properties
         this.floors = this.generateFloors();
         this.color = this.getColorForType();
+        this.customColor = null; // Allow custom color override
         this.footprint = this.generateFootprint();
+        
+        // Type-specific properties
+        this.properties = this.generateDefaultProperties();
     }
 
     generateFloors() {
@@ -37,6 +41,28 @@ export class Building {
             office: '#9C27B0'
         };
         return colors[this.type] || colors.residential;
+    }
+
+    generateDefaultProperties() {
+        const defaults = {
+            residential: {
+                style: 'single-family',
+                units: 1
+            },
+            commercial: {
+                businessType: 'retail',
+                parkingSpaces: 10
+            },
+            industrial: {
+                facilityType: 'warehouse',
+                loadingDocks: 2
+            },
+            office: {
+                officeType: 'professional',
+                occupancy: 100
+            }
+        };
+        return defaults[this.type] || defaults.residential;
     }
 
     generateFootprint() {
@@ -136,7 +162,7 @@ export class Building {
         }
 
         // Apply common attributes
-        shape.setAttribute('fill', this.color);
+        shape.setAttribute('fill', this.customColor || this.color);
         shape.setAttribute('stroke', '#333');
         shape.setAttribute('stroke-width', this.selected ? '2' : '1');
         shape.setAttribute('opacity', '0.8');
@@ -231,6 +257,35 @@ export class Building {
         // But this method is required for the visibility system
     }
 
+    updateProperties(changes) {
+        if (changes.type && changes.type !== this.type) {
+            this.type = changes.type;
+            this.color = this.getColorForType();
+            this.properties = this.generateDefaultProperties();
+        }
+        
+        if (changes.floors !== undefined) {
+            this.floors = changes.floors;
+        }
+        
+        if (changes.rotation !== undefined) {
+            this.rotation = changes.rotation;
+        }
+        
+        if (changes.customColor !== undefined) {
+            this.customColor = changes.customColor;
+        }
+        
+        if (changes.properties) {
+            this.properties = { ...this.properties, ...changes.properties };
+        }
+        
+        // Regenerate footprint if needed
+        if (changes.type) {
+            this.footprint = this.generateFootprint();
+        }
+    }
+
     toJSON() {
         return {
             id: this.id,
@@ -240,7 +295,9 @@ export class Building {
             height: this.height,
             type: this.type,
             rotation: this.rotation,
-            floors: this.floors
+            floors: this.floors,
+            customColor: this.customColor,
+            properties: this.properties
         };
     }
 
@@ -248,6 +305,8 @@ export class Building {
         const building = new Building(data.id, data.x, data.y, data.width, data.height, data.type);
         building.rotation = data.rotation || 0;
         building.floors = data.floors || building.generateFloors();
+        building.customColor = data.customColor || null;
+        building.properties = data.properties || building.generateDefaultProperties();
         return building;
     }
 }

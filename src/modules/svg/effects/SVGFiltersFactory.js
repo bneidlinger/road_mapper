@@ -29,6 +29,44 @@ export class SVGFiltersFactory {
   }
 
   /**
+   * Create building selection glow filter
+   * @returns {SVGElement} Filter element
+   */
+  static createBuildingSelectionGlow() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', 'building-selection-glow');
+    filter.setAttribute('width', '150%');
+    filter.setAttribute('height', '150%');
+    filter.setAttribute('x', '-25%');
+    filter.setAttribute('y', '-25%');
+    
+    // Create a green glow effect
+    const feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix');
+    feColorMatrix.setAttribute('type', 'matrix');
+    feColorMatrix.setAttribute('values', '0 0 0 0 0   0 1 0 0 0.5   0 0 0 0 0.5   0 0 0 1 0');
+    feColorMatrix.setAttribute('result', 'greenGlow');
+    
+    const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+    feGaussianBlur.setAttribute('in', 'greenGlow');
+    feGaussianBlur.setAttribute('stdDeviation', '3');
+    feGaussianBlur.setAttribute('result', 'coloredBlur');
+    
+    const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+    const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    feMergeNode1.setAttribute('in', 'coloredBlur');
+    const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    feMergeNode2.setAttribute('in', 'SourceGraphic');
+    
+    feMerge.appendChild(feMergeNode1);
+    feMerge.appendChild(feMergeNode2);
+    filter.appendChild(feColorMatrix);
+    filter.appendChild(feGaussianBlur);
+    filter.appendChild(feMerge);
+    
+    return filter;
+  }
+
+  /**
    * Create circuit board glow filter for bird's eye view
    * @returns {SVGElement} Filter element
    */

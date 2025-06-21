@@ -115,16 +115,12 @@ export class SVGRoadElement extends SVGBaseElement {
       this.laneMarkings = this.group.querySelector('.lane-markings');
       this.sidewalkPaths = this.group.querySelector('.sidewalks');
       
-      // Log if mainPath is missing
+      // Check if mainPath is missing
       if (!this.mainPath) {
-        console.warn(`SVGRoadElement: mainPath not found for road ${this.road?.id}`);
         // Try to find it in road-surface group
         const surfaceGroup = this.group.querySelector('.road-surface');
         if (surfaceGroup) {
           this.mainPath = surfaceGroup.querySelector('path');
-          if (this.mainPath) {
-            console.log(`Found mainPath in road-surface group for road ${this.road?.id}`);
-          }
         }
       }
     }
@@ -140,11 +136,10 @@ export class SVGRoadElement extends SVGBaseElement {
       isBirdsEye = forceMode;
     }
     
-    console.log('SVGRoadElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', isBirdsEye, 'forceMode:', forceMode, 'roadId:', this.road?.id);
+    // Update detail level based on zoom
     
     // Ensure we have element references
     if (!this.mainPath) {
-      console.log('mainPath missing, trying to restore references...');
       this.storeElementReferences();
       
       // If still no mainPath, try to find it directly
@@ -157,7 +152,6 @@ export class SVGRoadElement extends SVGBaseElement {
             this.mainPath = surfaceGroup.querySelector('path');
           }
         }
-        console.log('After second attempt, mainPath exists:', !!this.mainPath);
       }
     }
     
@@ -203,21 +197,11 @@ export class SVGRoadElement extends SVGBaseElement {
       
       // Apply bird's eye style when zoomed out
       if (isBirdsEye) {
-        console.log(`Applying bird's eye style to road ${this.road.id}`);
-        
         // Force removal of any existing styles first
         this.mainPath.removeAttribute('style');
         
         // Use the new animation system for consistent styling
         BirdsEyeAnimations.applyRoadBirdsEyeStyle(this.mainPath);
-        
-        // Double-check the styles were applied
-        const appliedStroke = this.mainPath.getAttribute('stroke');
-        const appliedStyle = this.mainPath.style.cssText;
-        console.log(`Road ${this.road.id} after bird's eye:`, {
-          stroke: appliedStroke,
-          style: appliedStyle
-        });
         
         // Hide ALL other road details
         this.surfaceRenderer.updateVisibility(zoom, true);
@@ -238,15 +222,12 @@ export class SVGRoadElement extends SVGBaseElement {
       
       // Extra check: if zoom is extremely low, force bird's eye style
       if (zoom < 0.1 && this.mainPath.getAttribute('stroke') !== '#00ff88') {
-        console.warn('Forcing bird\'s eye style at extreme zoom:', zoom);
         this.mainPath.setAttribute('stroke', '#00ff88');
         this.mainPath.style.stroke = '#00ff88';
         const strokeWidth = Math.max(5, Math.min(20, 0.6 / zoom));
         this.mainPath.setAttribute('stroke-width', strokeWidth);
         this.mainPath.style.strokeWidth = strokeWidth + 'px';
       }
-    } else {
-      console.warn('SVGRoadElement mainPath not found for road', this.road.id);
     }
   }
 

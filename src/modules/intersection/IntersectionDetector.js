@@ -14,11 +14,7 @@ export class IntersectionDetector {
   detectTIntersection(x, y, excludeRoadId = null, approachFrom = null) {
     const roads = this.elementManager.getRoads();
     
-    // Debug logging
-    if (roads.length > 0 && !this._hasLoggedDetection) {
-      console.log('detectTIntersection: Checking', roads.length, 'roads at point', {x, y});
-      this._hasLoggedDetection = true;
-    }
+    // Check roads for intersection
     
     for (const road of roads) {
       if (road.id === excludeRoadId) continue;
@@ -32,11 +28,8 @@ export class IntersectionDetector {
         const angle = this.calculateApproachAngle(road, closestPoint.point, approachPoint, { x, y });
         const angleDegrees = angle * 180 / Math.PI;
         
-        console.log('Found road within range:', road.id, 'distance:', closestPoint.distance, 'angle:', angleDegrees);
-        
         // T-intersection typically has angles close to 90 degrees
         if (this.isTIntersectionAngle(angle)) {
-          console.log('T-intersection detected!');
           return {
             type: 'T',
             road: road,

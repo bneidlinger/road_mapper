@@ -7,8 +7,8 @@ export class BuildingGenerator {
         this.elementManager = elementManager;
         this.minBuildingSize = 20;
         this.maxBuildingSize = 100;
-        this.minSetback = 10; // Minimum distance from roads
-        this.blockPadding = 15; // Padding inside blocks
+        this.minSetback = 5; // Minimum distance from roads (reduced for better placement)
+        this.blockPadding = 10; // Padding inside blocks (reduced)
     }
 
     /**
@@ -80,7 +80,11 @@ export class BuildingGenerator {
      */
     lineIntersectsRect(p1, p2, rect) {
         // Check if either endpoint is inside the rectangle
-        if (this.pointInRect(p1, rect) || this.pointInRect(p2, rect)) {
+        const p1InRect = this.pointInRect(p1, rect);
+        const p2InRect = this.pointInRect(p2, rect);
+        
+        if (p1InRect || p2InRect) {
+            console.log(`Line endpoint inside rect: p1=${p1InRect}, p2=${p2InRect}`);
             return true;
         }
         
@@ -94,6 +98,7 @@ export class BuildingGenerator {
         
         for (const edge of edges) {
             if (this.linesIntersect(p1, p2, edge.p1, edge.p2)) {
+                console.log(`Line intersects rectangle edge`);
                 return true;
             }
         }
@@ -138,10 +143,24 @@ export class BuildingGenerator {
      */
     subdivideRectangularBlock(block) {
         const lots = [];
-        const minLotSize = 30;
+        const minLotSize = 20; // Reduced from 30
         const maxLotSize = 60;
         
-        // Use recursive subdivision for more interesting patterns
+        // For small areas, just create a single lot with minimal padding
+        if (block.width < 50 || block.height < 50) {
+            const padding = 5; // Minimal padding for small areas
+            if (block.width - 2 * padding >= minLotSize && block.height - 2 * padding >= minLotSize) {
+                lots.push({
+                    x: block.x + padding,
+                    y: block.y + padding,
+                    width: block.width - 2 * padding,
+                    height: block.height - 2 * padding
+                });
+            }
+            return lots;
+        }
+        
+        // Use recursive subdivision for larger areas
         this.recursiveSubdivide(
             block.x + this.blockPadding,
             block.y + this.blockPadding,
@@ -245,25 +264,93 @@ export class BuildingGenerator {
         const bounds = building.getBounds();
         const buffer = this.minSetback;
         
-        // Check against roads
+        console.log(`Checking building placement at (${bounds.minX}, ${bounds.minY}) to (${bounds.maxX}, ${bounds.maxY})`);
+        console.log(`Buffer: ${buffer}`);
+        
+        // Check against roads - use proper distance calculation
         const roads = this.elementManager.getRoads();
+        console.log(`Number of roads to check: ${roads.length}`);
+        
         for (const road of roads) {
-            // Simplified check - would need proper polygon-line intersection
-            for (const point of road.points) {
-                if (point.x >= bounds.minX - buffer && 
-                    point.x <= bounds.maxX + buffer &&
-                    point.y >= bounds.minY - buffer && 
-                    point.y <= bounds.maxY + buffer) {
-                    return false;
+            // Quick check: if road is very far away, skip it
+            const roadBounds = road.getBounds();
+            const maxDistance = 100; // Skip roads more than 100 pixels away
+            if (!this.boundsOverlap(bounds, roadBounds, maxDistance)) {
+                console.log(`Skipping road ${road.id} - too far away`);
+                continue;
+            }
+            
+            // Check if building rectangle intersects with road path (with buffer)
+            for (let i = 0; i < road.points.length - 1; i++) {
+                const p1 = road.points[i];
+                const p2 = road.points[i + 1];
+                
+                // Create an expanded building bounds with buffer
+                const expandedBounds = {
+                    minX: bounds.minX - buffer,
+                    minY: bounds.minY - buffer,
+                    maxX: bounds.maxX + buffer,
+                    maxY: bounds.maxY + buffer
+                };
+                
+                const expandedRect = {
+                    x: expandedBounds.minX,
+                    y: expandedBounds.minY,
+                    width: expandedBounds.maxX - expandedBounds.minX,
+                    height: expandedBounds.maxY - expandedBounds.minY
+                };
+                
+                // Check if the road segment intersects the expanded building bounds
+                const intersects = this.lineIntersectsRect(p1, p2, expandedRect);
+                console.log(`Road segment (${p1.x},${p1.y}) to (${p2.x},${p2.y}) intersects expanded bounds: ${intersects}`);
+                
+                if (intersects) {
+                    // Also need to consider road width
+                    const roadWidth = road.properties?.width || 20;
+                    const roadBuffer = roadWidth / 2 + buffer;
+                    console.log(`Road width: ${roadWidth}, Road buffer: ${roadBuffer}`);
+                    
+                    // Get closest point on line to each corner of the building
+                    const corners = [
+                        { x: bounds.minX, y: bounds.minY },
+                        { x: bounds.maxX, y: bounds.minY },
+                        { x: bounds.maxX, y: bounds.maxY },
+                        { x: bounds.minX, y: bounds.maxY }
+                    ];
+                    
+                    for (const corner of corners) {
+                        const closestPoint = this.getClosestPointOnSegment(corner, p1, p2);
+                        const distance = Math.sqrt(
+                            Math.pow(closestPoint.x - corner.x, 2) + 
+                            Math.pow(closestPoint.y - corner.y, 2)
+                        );
+                        
+                        console.log(`Corner (${corner.x},${corner.y}) distance to road: ${distance}, required: ${roadBuffer}`);
+                        
+                        if (distance < roadBuffer) {
+                            console.log(`Building too close to road! Distance ${distance} < ${roadBuffer}`);
+                            return false;
+                        }
+                    }
                 }
             }
         }
         
+        console.log('Finished checking roads, no conflicts found');
+        
         // Check against intersections
         const intersections = this.elementManager.getIntersections();
+        console.log(`Number of intersections to check: ${intersections.length}`);
         for (const intersection of intersections) {
             const intBounds = intersection.getBounds();
-            if (this.boundsOverlap(bounds, intBounds, buffer)) {
+            const intersectionBuffer = buffer * 1.5; // 7.5 pixels
+            console.log(`Intersection bounds:`, intBounds);
+            console.log(`Building bounds: [${bounds.minX.toFixed(1)}, ${bounds.minY.toFixed(1)}] to [${bounds.maxX.toFixed(1)}, ${bounds.maxY.toFixed(1)}]`);
+            console.log(`Checking with buffer: ${intersectionBuffer}`);
+            
+            const overlaps = this.boundsOverlap(bounds, intBounds, intersectionBuffer);
+            if (overlaps) {
+                console.log(`FAILED: Building overlaps with intersection at (${intersection.x}, ${intersection.y})`);
                 return false;
             }
         }
@@ -274,21 +361,54 @@ export class BuildingGenerator {
             if (existingBuilding.id === building.id) continue;
             const existingBounds = existingBuilding.getBounds();
             if (this.boundsOverlap(bounds, existingBounds, 5)) { // 5px minimum spacing
+                console.log(`Building overlaps with existing building ${existingBuilding.id}`);
                 return false;
             }
         }
         
+        console.log('Building placement check PASSED!');
         return true;
+    }
+
+    /**
+     * Get closest point on a line segment to a given point
+     */
+    getClosestPointOnSegment(point, segStart, segEnd) {
+        const dx = segEnd.x - segStart.x;
+        const dy = segEnd.y - segStart.y;
+        const lengthSquared = dx * dx + dy * dy;
+        
+        if (lengthSquared === 0) {
+            return segStart; // Segment is a point
+        }
+        
+        const t = Math.max(0, Math.min(1, 
+            ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / lengthSquared
+        ));
+        
+        return {
+            x: segStart.x + t * dx,
+            y: segStart.y + t * dy
+        };
     }
 
     /**
      * Check if two bounds overlap with a buffer
      */
     boundsOverlap(bounds1, bounds2, buffer = 0) {
-        return !(bounds1.maxX + buffer < bounds2.minX - buffer || 
-                 bounds2.maxX + buffer < bounds1.minX - buffer ||
-                 bounds1.maxY + buffer < bounds2.minY - buffer || 
-                 bounds2.maxY + buffer < bounds1.minY - buffer);
+        // Expand bounds1 by buffer on all sides
+        const expanded1 = {
+            minX: bounds1.minX - buffer,
+            minY: bounds1.minY - buffer,
+            maxX: bounds1.maxX + buffer,
+            maxY: bounds1.maxY + buffer
+        };
+        
+        // Check if expanded bounds1 overlaps with bounds2
+        return !(expanded1.maxX < bounds2.minX || 
+                 bounds2.maxX < expanded1.minX ||
+                 expanded1.maxY < bounds2.minY || 
+                 bounds2.maxY < expanded1.minY);
     }
 
     /**
@@ -337,25 +457,25 @@ export class BuildingGenerator {
      * Generate buildings in a specific area
      */
     generateBuildingsInArea(x, y, width, height) {
+        console.log(`generateBuildingsInArea called with: x=${x}, y=${y}, width=${width}, height=${height}`);
         const block = { x, y, width, height, valid: true };
         
-        // Check if area intersects roads
-        const roads = this.elementManager.getRoads();
-        for (const road of roads) {
-            if (this.blockIntersectsRoad(block, road)) {
-                return 0; // Don't generate in areas with roads
-            }
-        }
+        // Remove the road intersection check - let individual building placement handle conflicts
         
         const lots = this.subdivideBlock(block);
+        console.log(`Subdivision created ${lots.length} lots`);
         let generatedCount = 0;
         
         for (const lot of lots) {
             const building = this.generateBuildingForLot(lot);
+            console.log(`Checking placement for building at (${building.x}, ${building.y})`);
             
             if (this.checkBuildingPlacement(building)) {
                 this.elementManager.addBuilding(building);
                 generatedCount++;
+                console.log(`Building placed successfully`);
+            } else {
+                console.log(`Building placement failed`);
             }
         }
         

@@ -128,10 +128,10 @@ export class Intersection {
 
   getBounds() {
     return {
-      x: this.x - this.radius,
-      y: this.y - this.radius,
-      width: this.radius * 2,
-      height: this.radius * 2
+      minX: this.x - this.radius,
+      minY: this.y - this.radius,
+      maxX: this.x + this.radius,
+      maxY: this.y + this.radius
     };
   }
 

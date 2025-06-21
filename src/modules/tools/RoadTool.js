@@ -13,9 +13,10 @@ export class RoadTool extends BaseTool {
     this.intersectionDetector = new IntersectionDetector(this.elementManager);
     this.tIntersectionRenderer = new TIntersectionRenderer();
     this.potentialIntersection = null; // Store detected intersection for preview
+    this.isExtending = false; // Track if we're extending an existing road
+    this.extendingFromStart = false; // Track which end we're extending from
     
-    console.log('RoadTool initialized with elementManager:', this.elementManager);
-    console.log('IntersectionDetector initialized:', this.intersectionDetector);
+    // Debug logging removed
   }
 
   activate() {
@@ -46,10 +47,7 @@ export class RoadTool extends BaseTool {
   }
 
   onMouseDown(event, worldPos) {
-    console.log('RoadTool.onMouseDown', worldPos);
-    
     const snappedPos = this.grid.snap(worldPos.x, worldPos.y);
-    console.log('Snapped position:', snappedPos);
     
     if (!this.isDrawing) {
       this.startRoad(snappedPos.x, snappedPos.y);
@@ -75,9 +73,7 @@ export class RoadTool extends BaseTool {
         approachFrom
       );
       
-      if (this.potentialIntersection) {
-        console.log('Potential T-intersection detected at:', this.potentialIntersection.point);
-      }
+      // Potential T-intersection detected
       
       this.toolManager.emit('redraw');
     }
@@ -90,9 +86,27 @@ export class RoadTool extends BaseTool {
   }
 
   startRoad(x, y) {
-    const roadId = `road_${Date.now()}`;
-    this.currentRoad = new Road(roadId, [], this.roadType);
-    this.currentRoad.addPoint(x, y);
+    // Check if we're near an existing road's endpoint
+    const roadEndpoint = this.elementManager.findRoadByEndpoint(x, y, 15);
+    
+    if (roadEndpoint) {
+      // Extend the existing road
+      this.currentRoad = roadEndpoint.road;
+      this.isExtending = true;
+      
+      // Determine which end we're extending from
+      const firstPoint = this.currentRoad.getFirstPoint();
+      this.extendingFromStart = (roadEndpoint.endpoint === firstPoint);
+      
+      // Extending existing road
+    } else {
+      // Create a new road
+      const roadId = `road_${Date.now()}`;
+      this.currentRoad = new Road(roadId, [], this.roadType);
+      this.currentRoad.addPoint(x, y);
+      this.isExtending = false;
+    }
+    
     this.isDrawing = true;
   }
   
@@ -102,19 +116,37 @@ export class RoadTool extends BaseTool {
 
   addPoint(x, y) {
     if (this.currentRoad) {
-      const lastPoint = this.currentRoad.getLastPoint();
-      if (lastPoint.x !== x || lastPoint.y !== y) {
+      // Get the appropriate reference point based on whether we're extending
+      let referencePoint;
+      if (this.isExtending) {
+        referencePoint = this.extendingFromStart ? 
+          this.currentRoad.getFirstPoint() : 
+          this.currentRoad.getLastPoint();
+      } else {
+        referencePoint = this.currentRoad.getLastPoint();
+      }
+      
+      if (referencePoint.x !== x || referencePoint.y !== y) {
         // Check if we're creating a T-intersection
         const intersection = this.intersectionDetector.detectTIntersection(
           x, y, this.currentRoad.id
         );
         
         if (intersection) {
-          // Snap to the intersection point
-          this.currentRoad.addPoint(intersection.point.x, intersection.point.y);
+          // Add the point to complete the road
+          if (this.isExtending && this.extendingFromStart) {
+            // Insert at the beginning if extending from start
+            this.currentRoad.points.unshift({ x: intersection.point.x, y: intersection.point.y });
+          } else {
+            this.currentRoad.addPoint(intersection.point.x, intersection.point.y);
+          }
           
-          // First add the road to the element manager
-          this.elementManager.addRoad(this.currentRoad);
+          // Update the road in element manager if extending
+          if (this.isExtending) {
+            this.elementManager.emit('roadUpdated', this.currentRoad);
+          } else {
+            this.elementManager.addRoad(this.currentRoad);
+          }
           
           // Create the intersection with the current road ID
           this.elementManager.createIntersectionAt(
@@ -126,11 +158,18 @@ export class RoadTool extends BaseTool {
           // Mark as not drawing anymore
           this.currentRoad = null;
           this.isDrawing = false;
+          this.isExtending = false;
           this.previewPoint = null;
           this.potentialIntersection = null;
           this.toolManager.emit('redraw');
         } else {
-          this.currentRoad.addPoint(x, y);
+          // Add point normally
+          if (this.isExtending && this.extendingFromStart) {
+            // Insert at the beginning if extending from start
+            this.currentRoad.points.unshift({ x, y });
+          } else {
+            this.currentRoad.addPoint(x, y);
+          }
         }
       }
     }
@@ -138,12 +177,19 @@ export class RoadTool extends BaseTool {
 
   finishRoad() {
     if (this.currentRoad && this.currentRoad.points.length > 1) {
-      this.elementManager.addRoad(this.currentRoad);
+      if (this.isExtending) {
+        // For extended roads, just emit an update event
+        this.elementManager.emit('roadUpdated', this.currentRoad);
+      } else {
+        // For new roads, add them to the element manager
+        this.elementManager.addRoad(this.currentRoad);
+      }
       this.checkForIntersections(this.currentRoad);
     }
     
     this.currentRoad = null;
     this.isDrawing = false;
+    this.isExtending = false;
     this.previewPoint = null;
     this.potentialIntersection = null;
     this.toolManager.emit('redraw');
@@ -204,22 +250,36 @@ export class RoadTool extends BaseTool {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       let d = '';
       
-      // Build path data
-      this.currentRoad.points.forEach((point, index) => {
-        if (index === 0) {
-          d += `M ${point.x} ${point.y}`;
-        } else {
-          d += ` L ${point.x} ${point.y}`;
-        }
-      });
-      
-      // Add preview point if exists
-      if (this.previewPoint) {
-        // If we have a potential intersection, snap to that point
+      // Build path data - handle extending from start differently
+      if (this.isExtending && this.extendingFromStart && this.previewPoint) {
+        // Start with preview point when extending from start
         const targetPoint = this.potentialIntersection 
           ? this.potentialIntersection.point 
           : this.previewPoint;
-        d += ` L ${targetPoint.x} ${targetPoint.y}`;
+        d += `M ${targetPoint.x} ${targetPoint.y}`;
+        
+        // Then connect to the existing road points
+        this.currentRoad.points.forEach((point, index) => {
+          d += ` L ${point.x} ${point.y}`;
+        });
+      } else {
+        // Normal path building
+        this.currentRoad.points.forEach((point, index) => {
+          if (index === 0) {
+            d += `M ${point.x} ${point.y}`;
+          } else {
+            d += ` L ${point.x} ${point.y}`;
+          }
+        });
+        
+        // Add preview point if exists
+        if (this.previewPoint) {
+          // If we have a potential intersection, snap to that point
+          const targetPoint = this.potentialIntersection 
+            ? this.potentialIntersection.point 
+            : this.previewPoint;
+          d += ` L ${targetPoint.x} ${targetPoint.y}`;
+        }
       }
       
       path.setAttribute('d', d);

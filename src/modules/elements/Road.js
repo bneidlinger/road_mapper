@@ -18,6 +18,29 @@ export class Road {
     return this.points[this.points.length - 1];
   }
 
+  getFirstPoint() {
+    return this.points[0];
+  }
+
+  getEndpoints() {
+    if (this.points.length === 0) return [];
+    if (this.points.length === 1) return [this.points[0]];
+    return [this.points[0], this.points[this.points.length - 1]];
+  }
+
+  isNearEndpoint(x, y, tolerance = 10) {
+    const endpoints = this.getEndpoints();
+    for (const endpoint of endpoints) {
+      const distance = Math.sqrt(
+        Math.pow(x - endpoint.x, 2) + Math.pow(y - endpoint.y, 2)
+      );
+      if (distance <= tolerance) {
+        return endpoint;
+      }
+    }
+    return null;
+  }
+
   getBounds() {
     if (this.points.length === 0) return null;
     

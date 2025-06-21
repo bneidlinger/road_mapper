@@ -356,7 +356,7 @@ export class SVGIntersectionElement extends SVGBaseElement {
     } else {
       this.isBirdsEye = BirdsEyeAnimations.isBirdsEyeZoom(zoom);
     }
-    console.log('SVGIntersectionElement updateDetailLevel - zoom:', zoom, 'isBirdsEye:', this.isBirdsEye, 'forceMode:', forceMode);
+    // Update detail level based on zoom
     // Re-render to adjust detail levels based on zoom
     this.renderIntersection();
   }

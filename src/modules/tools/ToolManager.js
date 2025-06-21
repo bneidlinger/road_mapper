@@ -52,7 +52,7 @@ export class ToolManager extends EventEmitter {
     // For SVG, we need to handle events differently
     const element = this.canvas.tagName === 'svg' ? this.canvas : this.canvas;
     
-    console.log('Setting up event listeners on:', element);
+    // Setting up event listeners
     
     // Store bound handlers so we can remove them later
     this.boundHandlers = {
@@ -69,11 +69,10 @@ export class ToolManager extends EventEmitter {
     element.addEventListener('wheel', this.boundHandlers.wheel);
     element.addEventListener('contextmenu', this.boundHandlers.contextmenu);
     
-    console.log('Event listeners attached');
+    // Event listeners attached
   }
 
   setActiveTool(toolName) {
-    console.log('ToolManager.setActiveTool:', toolName);
     if (this.currentTool) {
       this.currentTool.deactivate();
     }
@@ -81,8 +80,18 @@ export class ToolManager extends EventEmitter {
     this.activeTool = toolName;
     this.currentTool = this.tools[toolName];
     
+    // Update class on SVG container for tool-specific styling
+    if (this.canvas && this.canvas.tagName === 'svg') {
+      // Remove all tool classes
+      this.canvas.classList.remove('select-tool-active', 'road-tool-active', 
+        'building-tool-active', 'intersection-tool-active', 'delete-tool-active', 'pan-tool-active');
+      
+      // Add current tool class
+      const toolClass = toolName.toLowerCase() + '-tool-active';
+      this.canvas.classList.add(toolClass);
+    }
+    
     if (this.currentTool) {
-      console.log('Activating tool:', toolName, this.currentTool);
       this.currentTool.activate();
       this.emit('toolChange', toolName);
     }
@@ -105,11 +114,6 @@ export class ToolManager extends EventEmitter {
           this.currentTool.onMouseDown(event, worldPos);
           // Check if the tool is actively using the mouse (e.g., started drawing)
           this.toolIsActive = this.currentTool.isUsingMouse && this.currentTool.isUsingMouse();
-          console.log('ToolManager.handleMouseDown: Tool active status:', {
-            toolName: this.activeTool,
-            toolIsActive: this.toolIsActive,
-            hasIsUsingMouse: !!this.currentTool.isUsingMouse
-          });
         }
       }
     } catch (error) {
@@ -121,6 +125,8 @@ export class ToolManager extends EventEmitter {
 
   handleMouseMove(event) {
     const worldPos = this.getWorldPosition(event);
+    
+    // Mouse move handling
     
     // Check if we should start left-click panning
     // Only check once if the tool is active - don't double-check
@@ -135,17 +141,11 @@ export class ToolManager extends EventEmitter {
         
         // Use the toolIsActive flag that was set during mouseDown
         if (!this.toolIsActive) {
-          console.log('ToolManager: Starting left-click pan! Tool not active:', {
-            toolName: this.activeTool,
-            toolIsActive: this.toolIsActive,
-            distance: distance
-          });
+          // Starting left-click pan - tool not active
           if (this.currentTool && this.currentTool.cancelAction) {
             this.currentTool.cancelAction();
           }
           this.tools[TOOLS.PAN].startLeftClickPan(event);
-        } else {
-          console.log('ToolManager: Tool is active, not starting pan:', this.activeTool);
         }
       }
     }
@@ -160,6 +160,7 @@ export class ToolManager extends EventEmitter {
   }
 
   handleMouseUp(event) {
+    // Handle mouse up
     const worldPos = this.getWorldPosition(event);
     
     // Reset mouse tracking

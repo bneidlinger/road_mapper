@@ -14,10 +14,7 @@ export class IntersectionPropertiesPanel {
       return;
     }
     
-    console.log('IntersectionPropertiesPanel: Mounted to container', containerId);
-    console.log('Container before render:', this.container);
     this.render();
-    console.log('Container after render:', this.container.innerHTML.substring(0, 200) + '...');
     this.bindEvents();
     this.setupElementManagerListeners();
     // Don't hide initially - let it be controlled by selection events
@@ -26,7 +23,7 @@ export class IntersectionPropertiesPanel {
   }
 
   render() {
-    console.log('IntersectionPropertiesPanel: Rendering HTML content');
+    // Rendering HTML content
     this.container.innerHTML = `
       <div class="properties-panel intersection-properties" id="intersection-properties-panel" style="
         width: 320px;
@@ -246,10 +243,9 @@ export class IntersectionPropertiesPanel {
   setupElementManagerListeners() {
     // Listen for selection events
     this.elementManager.on('elementSelected', (element) => {
-      console.log('IntersectionPropertiesPanel: elementSelected event received', element);
+      // Element selected event received
       if (element && element.connectedRoads !== undefined) {
         // It's an intersection
-        console.log('IntersectionPropertiesPanel: Showing for intersection', element.id);
         this.showForIntersection(element);
       } else {
         this.hide();
@@ -257,7 +253,6 @@ export class IntersectionPropertiesPanel {
     });
 
     this.elementManager.on('elementDeselected', () => {
-      console.log('IntersectionPropertiesPanel: elementDeselected event received');
       this.hide();
     });
   }
@@ -265,7 +260,7 @@ export class IntersectionPropertiesPanel {
   applyChanges() {
     if (!this.pendingChanges || !this.currentIntersection) return;
     
-    console.log('Applying changes:', this.pendingChanges);
+    // Applying changes
     
     // Apply all pending changes to the actual intersection
     this.currentIntersection.controlType = this.pendingChanges.controlType;
@@ -278,7 +273,7 @@ export class IntersectionPropertiesPanel {
     };
     this.currentIntersection.trafficLightConfig = { ...this.pendingChanges.trafficLightConfig };
     
-    console.log('Updated intersection:', this.currentIntersection);
+    // Updated intersection
     
     // Store reference before hiding (which clears currentIntersection)
     const intersectionToUpdate = this.currentIntersection;
@@ -551,7 +546,7 @@ export class IntersectionPropertiesPanel {
   }
 
   showForIntersection(intersection) {
-    console.log('IntersectionPropertiesPanel: showForIntersection called', intersection);
+    // Show for intersection
     this.currentIntersection = intersection;
     this.isVisible = true;
     
@@ -569,14 +564,13 @@ export class IntersectionPropertiesPanel {
     };
     
     // First check if we have rendered content
-    console.log('Container innerHTML length:', this.container.innerHTML.length);
-    console.log('Container childNodes:', this.container.childNodes.length);
+    // Container updated
     
     // Find the panel element
     const panel = this.container.querySelector('.intersection-properties');
     
     if (!panel) {
-      console.log('No panel found, skipping display');
+      // No panel found, skipping display
       return;
     }
     
@@ -590,29 +584,7 @@ export class IntersectionPropertiesPanel {
     panel.style.top = '100px';
     panel.style.zIndex = '10000';
     
-    console.log('IntersectionPropertiesPanel: container display set to block');
-    console.log('Panel computed style display:', window.getComputedStyle(panel).display);
-    console.log('Panel offsetHeight:', panel.offsetHeight);
-    console.log('Container element:', this.container);
-    console.log('Container id:', this.container.id);
-    console.log('Container display:', window.getComputedStyle(this.container).display);
-    console.log('Panel element:', panel);
-    if (panel) {
-      const panelStyle = window.getComputedStyle(panel);
-      const rect = panel.getBoundingClientRect();
-      console.log('Panel display:', panelStyle.display);
-      console.log('Panel position:', panelStyle.position);
-      console.log('Panel z-index:', panelStyle.zIndex);
-      console.log('Panel dimensions:', rect.width + 'x' + rect.height);
-      console.log('Panel position rect:', {
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        left: rect.left
-      });
-      console.log('Panel visibility:', panelStyle.visibility);
-      console.log('Panel opacity:', panelStyle.opacity);
-    }
+    // Container display set to block
     
     // Update UI with intersection data
     this.container.querySelector('#intersection-id').value = intersection.id;
@@ -676,9 +648,7 @@ export class IntersectionPropertiesPanel {
   
   // Temporary method to force show the panel
   forceShow() {
-    console.log('ForceShow called');
-    console.log('Container:', this.container);
-    console.log('Container innerHTML:', this.container.innerHTML ? 'Has content' : 'Empty');
+    // Force show called
     
     // Re-render to be sure
     this.render();
@@ -692,13 +662,10 @@ export class IntersectionPropertiesPanel {
     this.container.style.minHeight = '500px';
     this.container.style.background = 'white';
     this.container.style.border = '5px solid red';
-    console.log('Force showing panel');
+    // Force showing panel
     
     // Log the actual panel
     const panel = this.container.querySelector('.properties-panel');
-    console.log('Inner panel found:', panel ? 'Yes' : 'No');
-    if (panel) {
-      console.log('Panel display:', window.getComputedStyle(panel).display);
-    }
+    // Update panel display if found
   }
 }

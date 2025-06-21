@@ -11,7 +11,8 @@
       "Bash(pkill:*)",
       "Bash(find:*)",
       "Bash(curl:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(npx webpack:*)"
     ],
     "deny": []
   }

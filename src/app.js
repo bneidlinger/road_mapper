@@ -1,10 +1,12 @@
 import './styles/main.css';
+import './styles/properties-panel.css';
 import { ElementManager } from './modules/ElementManager.js';
 import { ToolManager } from './modules/tools/ToolManager.js';
 import { SVGRenderer } from './modules/svg/SVGRenderer.js';
 import { Toolbar } from './components/Toolbar.js';
 import { StatusBar } from './components/StatusBar.js';
 import { IntersectionPropertiesPanel } from './components/IntersectionPropertiesPanel.js';
+import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
 import { Store } from './core/Store.js';
 import { TOOLS } from './core/constants.js';
 import { Grid } from './modules/grid/Grid.js';
@@ -19,6 +21,7 @@ class RoadMapperApp {
     this.toolbar = null;
     this.statusBar = null;
     this.intersectionPropertiesPanel = null;
+    this.buildingPropertiesPanel = null;
     this.store = null;
   }
 
@@ -26,52 +29,60 @@ class RoadMapperApp {
     const loadingEl = document.getElementById('canvas-loading');
     
     try {
-      console.log('Initializing Road Mapper...');
+      // Initializing Road Mapper
       
       // Show loading state
       if (loadingEl) {
         loadingEl.classList.remove('hidden');
       }
       
-      console.log('DOM elements:', {
-        svgContainer: document.getElementById('svg-container'),
-        toolbarContainer: document.getElementById('toolbar-container'),
-        statusBarContainer: document.getElementById('status-bar-container')
-      });
+      // Check DOM elements
       
       // Initialize core modules
       this.grid = new Grid();
-      console.log('Grid initialized');
+      // Grid initialized
       
       this.elementManager = new ElementManager();
-      console.log('ElementManager initialized');
+      // ElementManager initialized
       
       // Create placeholder canvas for tool manager (we'll update this later)
       const dummyCanvas = document.createElement('canvas');
       this.toolManager = new ToolManager(dummyCanvas, null, this.grid, this.elementManager);
-      console.log('ToolManager initialized');
+      // ToolManager initialized
       
       // Initialize SVG renderer
       this.svgRenderer = new SVGRenderer('svg-container', this.elementManager, this.toolManager);
       this.viewport = this.svgRenderer.viewport;
-      console.log('SVGRenderer initialized');
+      // SVGRenderer initialized
       
       // Update tool manager with proper references
       this.toolManager.updateCanvas(this.svgRenderer.svgManager.svg);
       this.toolManager.viewport = this.viewport;
-      console.log('ToolManager references updated');
+      // ToolManager references updated
 
       // Initialize UI components
       this.toolbar = new Toolbar('toolbar-container', this.toolManager);
-      console.log('Toolbar mounted');
+      // Toolbar mounted
 
       this.statusBar = new StatusBar(this.viewport, this.toolManager);
       this.statusBar.mount('status-bar-container');
-      console.log('StatusBar mounted');
+      // StatusBar mounted
 
+      // Create separate containers for each properties panel
+      const propertiesContainer = document.getElementById('properties-panel');
+      
+      // Create intersection panel container
+      const intersectionContainer = document.createElement('div');
+      intersectionContainer.id = 'intersection-properties-container';
+      propertiesContainer.appendChild(intersectionContainer);
+      
       this.intersectionPropertiesPanel = new IntersectionPropertiesPanel(this.elementManager);
-      this.intersectionPropertiesPanel.mount('properties-panel');
-      console.log('IntersectionPropertiesPanel mounted');
+      this.intersectionPropertiesPanel.mount('intersection-properties-container');
+      // IntersectionPropertiesPanel mounted
+      
+      this.buildingPropertiesPanel = new BuildingPropertiesPanel();
+      propertiesContainer.appendChild(this.buildingPropertiesPanel.getElement());
+      // BuildingPropertiesPanel mounted
 
       // Initialize app state
       this.store = new Store({
@@ -79,26 +90,17 @@ class RoadMapperApp {
         units: 'metric',
         autoSave: true
       });
-      console.log('Store initialized');
+      // Store initialized
 
       // Set default tool
       this.toolManager.setActiveTool(TOOLS.SELECT);
-      console.log('Default tool set');
+      // Default tool set
 
       // Bind events
       this.bindEvents();
-      console.log('Events bound');
+      // Events bound
 
-      console.log('Road Mapper initialized successfully with SVG rendering');
-      
-      // Log viewport state for debugging
-      console.log('Viewport state:', {
-        x: this.viewport.x,
-        y: this.viewport.y,
-        zoom: this.viewport.zoom,
-        panX: this.viewport.panX,
-        panY: this.viewport.panY
-      });
+      // Road Mapper initialized successfully with SVG rendering
       
       // Hide loading state with fade out
       setTimeout(() => {
@@ -139,6 +141,43 @@ class RoadMapperApp {
     // Snap toggle
     document.getElementById('toggle-snap')?.addEventListener('click', () => {
       this.grid.toggleSnap();
+    });
+
+    // Handle element selection events
+    this.toolManager.on('elementSelected', (element) => {
+      console.log('app.js: elementSelected event received:', element);
+      if (element.width !== undefined && element.height !== undefined) {
+        // It's a building
+        console.log('app.js: Detected building selection');
+        this.buildingPropertiesPanel.show(element);
+        this.intersectionPropertiesPanel.hide();
+      } else if (element.connectedRoads !== undefined) {
+        // It's an intersection
+        console.log('app.js: Detected intersection selection');
+        this.intersectionPropertiesPanel.show(element);
+        this.buildingPropertiesPanel.hide();
+      } else {
+        // It's a road or something else
+        console.log('app.js: Detected other element selection');
+        this.buildingPropertiesPanel.hide();
+        this.intersectionPropertiesPanel.hide();
+      }
+    });
+    
+    this.toolManager.on('elementDeselected', () => {
+      this.buildingPropertiesPanel.hide();
+      this.intersectionPropertiesPanel.hide();
+    });
+    
+    // Set up building properties panel events
+    this.buildingPropertiesPanel.on('update-building', (data) => {
+      const { building, changes } = data;
+      building.updateProperties(changes);
+      this.svgRenderer.updateBuilding(building);
+    });
+    
+    this.buildingPropertiesPanel.on('delete-building', (building) => {
+      this.elementManager.removeBuilding(building.id);
     });
 
     // Keyboard shortcuts
@@ -192,14 +231,12 @@ class RoadMapperApp {
           case 'E':
             // Toggle bird's eye view mode (E for Eye)
             const isNowBirdsEye = this.svgRenderer.viewport.toggleBirdsEyeMode();
-            console.log('Toggled bird\'s eye mode:', isNowBirdsEye);
             
             // Force update visibility immediately
             this.svgRenderer.updateVisibility();
             
             // Double-check that elements are being updated
             setTimeout(() => {
-              console.log('Re-updating visibility after bird\'s eye toggle');
               this.svgRenderer.updateVisibility();
             }, 50);
             break;
