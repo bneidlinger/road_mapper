@@ -10,6 +10,7 @@
 
 ## View Controls
 - **E** - Toggle bird's eye view
+- **3** - Toggle isometric 3D view
 - **Ctrl/Cmd + =** or **Ctrl/Cmd + Plus** - Zoom in
 - **Ctrl/Cmd + -** or **Ctrl/Cmd + Minus** - Zoom out
 - **Ctrl/Cmd + 0** - Reset zoom to 100%

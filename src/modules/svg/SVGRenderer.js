@@ -8,6 +8,7 @@ import { ZOOM_THRESHOLDS } from '../effects/EffectConstants.js';
 import { SVGFiltersFactory } from './effects/SVGFiltersFactory.js';
 import { SVGPatternsFactory } from './effects/SVGPatternsFactory.js';
 import { VisibilityManager } from './rendering/VisibilityManager.js';
+import { isometricRenderer } from '../rendering/IsometricRenderer.js';
 
 export class SVGRenderer {
   constructor(containerId, elementManager, toolManager) {
@@ -41,6 +42,14 @@ export class SVGRenderer {
     this.svgManager.addDef(SVGFiltersFactory.createGlowFilter());
     this.svgManager.addDef(SVGFiltersFactory.createCircuitGlowFilter());
     this.svgManager.addDef(SVGFiltersFactory.createBuildingSelectionGlow());
+    this.svgManager.addDef(SVGFiltersFactory.createCityLightBlur());
+    
+    // Add building shadow filters
+    const shadowFilters = SVGFiltersFactory.createBuildingShadowFilters();
+    shadowFilters.forEach(filter => this.svgManager.addDef(filter));
+    
+    // Add 3D effect filter
+    this.svgManager.addDef(SVGFiltersFactory.createBuilding3DEffect());
     
     // Add patterns
     SVGPatternsFactory.createAsphaltPattern(this.svgManager);
@@ -208,7 +217,7 @@ export class SVGRenderer {
     this.svgManager.addToLayer('ground', svgBuilding.getElement());
     
     // Update detail level based on current zoom
-    svgBuilding.updateDetailLevel(this.viewport.zoom);
+    svgBuilding.updateDetailLevel(this.viewport.zoom, this.viewport.isBirdsEyeMode());
     
     // Force visibility update
     this.updateVisibility();
@@ -298,7 +307,41 @@ export class SVGRenderer {
       this.svgManager.addToLayer('ground', newSvgBuilding.getElement());
       
       // Update detail level
-      newSvgBuilding.updateDetailLevel(this.viewport.zoom);
+      newSvgBuilding.updateDetailLevel(this.viewport.zoom, this.viewport.isBirdsEyeMode());
     }
+  }
+
+  /**
+   * Toggle isometric view mode
+   */
+  toggleIsometric() {
+    const isEnabled = isometricRenderer.toggle();
+    
+    // Update all building elements
+    this.svgElements.forEach((element, id) => {
+      if (element instanceof SVGBuildingElement) {
+        element.updateRenderMode();
+        element.updateDetailLevel(this.viewport.zoom, this.viewport.isBirdsEyeMode());
+      }
+    });
+    
+    // Apply viewport transform if needed
+    if (isEnabled) {
+      const transform = isometricRenderer.getViewportTransform();
+      if (transform) {
+        this.svgManager.svg.style.transform = transform;
+      }
+    } else {
+      this.svgManager.svg.style.transform = '';
+    }
+    
+    return isEnabled;
+  }
+  
+  /**
+   * Check if isometric mode is enabled
+   */
+  isIsometricEnabled() {
+    return isometricRenderer.isEnabled();
   }
 }

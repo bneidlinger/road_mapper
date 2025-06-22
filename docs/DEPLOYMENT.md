@@ -32,7 +32,7 @@ If you need to deploy manually:
 
 ```bash
 # Option 1: Use the deploy script
-./deploy-gh-pages.sh
+./scripts/deploy-gh-pages.sh
 
 # Option 2: Manual steps
 npm run build

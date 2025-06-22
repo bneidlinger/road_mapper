@@ -546,6 +546,10 @@ export class IntersectionPropertiesPanel {
   }
 
   showForIntersection(intersection) {
+    console.log('IntersectionPropertiesPanel.showForIntersection called with:', intersection);
+    console.log('Container:', this.container);
+    console.log('Container id:', this.container?.id);
+    
     // Show for intersection
     this.currentIntersection = intersection;
     this.isVisible = true;

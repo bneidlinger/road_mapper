@@ -5,9 +5,37 @@ All notable changes to Road Mapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0-alpha] - 2025-01-22
+## [0.3.0-alpha] - 2025-06-22
 
 ### Added
+
+#### Isometric 3D View System
+- Implemented full isometric 3D rendering mode for buildings (toggle with '3' key)
+- Buildings now properly display floor count with 12px height per floor
+- Added proper face rendering with shading (top, right, front faces)
+- Implemented dynamic shadows that scale with building height
+- Added floor line indicators showing individual floors in isometric view
+- Type-specific isometric details:
+  - Residential: Windows on each floor and entrance doors
+  - Commercial: Large glass storefronts with window dividers  
+  - Office: Grid pattern windows across all floors
+  - Industrial: Loading docks and high windows
+- Fixed isometric building offset to properly align with tile positions
+
+#### Building Visual Enhancements
+- Added type-specific details for all building types:
+  - Industrial: Smoke stacks and ventilation units
+  - Office: Rooftop HVAC units and antennas for tall buildings
+  - Commercial: Glass storefronts with awnings
+  - Residential: Chimneys for houses, window patterns for apartments
+- Enhanced shadow system with filter-based dynamic shadows
+- Added subtle 3D highlights for depth perception
+- Details appear/disappear based on zoom level for performance
+
+#### Bird's Eye View Enhancement
+- Buildings now transition to glowing city lights effect in bird's eye view
+- Type-specific light colors (residential warm, commercial cool, etc.)
+- Smooth fade transitions between view modes
 
 #### Building Properties Panel
 - Created comprehensive building properties panel with professional UI
@@ -31,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected intersection bounds format mismatch (was returning {x,y,width,height} instead of {minX,minY,maxX,maxY})
 - Fixed mouse interaction bug where first click with building tool didn't respond properly
 - Resolved properties panel visibility issue by creating separate containers for each panel type
+- Fixed intersection properties panel not showing after building UI implementation
 
 ### Technical
 - Added babel-loader with @babel/preset-env for modern JavaScript syntax support
@@ -38,6 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented proper bounds overlap detection for building placement constraints
 - Added building selection glow filter to SVG filters factory
 - Updated Building class to support custom properties and color overrides
+- Created IsometricRenderer module for 3D coordinate transformations
+- Implemented dual rendering modes (standard and isometric) in SVGBuildingElement
+- Added multiple shadow filters for different building heights
+- Organized test/development files into archive folders
 
 ## [0.2.0-alpha] - 2025-01-20
 

@@ -3,15 +3,15 @@ echo Road Mapper Development Server (Webpack)
 echo ========================================
 echo.
 
+:: Change to project root directory (parent of scripts)
+cd /d "%~dp0\.."
+
 :: Check if node_modules exists
 if not exist "node_modules" (
     echo Installing dependencies...
     call npm install
     echo.
 )
-
-:: Change to current directory
-cd /d "%~dp0"
 
 :: Start Webpack dev server using direct path
 echo Starting Webpack development server...

@@ -19,6 +19,28 @@
             overflow-x: hidden;
         }
 
+        /* Version Banner */
+        .version-banner {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #0a0a0f;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .version-banner a {
+            color: #0a0a0f;
+            margin-left: 1rem;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .version-banner a:hover {
+            text-decoration: none;
+        }
+
         /* Header */
         header {
             position: fixed;
@@ -30,6 +52,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 1000;
             padding: 1rem 0;
+            margin-top: 48px; /* Height of version banner */
         }
 
         nav {
@@ -299,6 +322,10 @@
     </style>
 </head>
 <body>
+    <div class="version-banner">
+        🚀 <strong>Version 0.3.0-alpha Released!</strong> - New isometric 3D view, enhanced building visuals, and more!
+        <a href="./changelog.html">View Full Changelog →</a>
+    </div>
     <header>
         <nav>
             <div class="logo">Road Mapper</div>
@@ -392,7 +419,7 @@
             <div class="info-block">
                 <h3>Current Version</h3>
                 <p>Version 0.3.0-alpha</p>
-                <p>Latest updates include comprehensive building properties panel with type-specific customization options and visual selection feedback.</p>
+                <p>Latest updates include isometric 3D view, enhanced building visuals with type-specific details, bird's eye city lights effect, and comprehensive building properties panel.</p>
             </div>
             
             <div class="info-block">

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change to project root directory
+cd "$(dirname "$0")/.."
+
 # Build for production
 echo "Building for production..."
 npm run build

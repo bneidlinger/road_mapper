@@ -67,6 +67,27 @@ export class SVGFiltersFactory {
   }
 
   /**
+   * Create city light blur filter for building lights
+   * @returns {SVGElement} Filter element
+   */
+  static createCityLightBlur() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', 'city-light-blur');
+    filter.setAttribute('width', '300%');
+    filter.setAttribute('height', '300%');
+    filter.setAttribute('x', '-100%');
+    filter.setAttribute('y', '-100%');
+    
+    const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+    feGaussianBlur.setAttribute('in', 'SourceGraphic');
+    feGaussianBlur.setAttribute('stdDeviation', '4');
+    
+    filter.appendChild(feGaussianBlur);
+    
+    return filter;
+  }
+
+  /**
    * Create circuit board glow filter for bird's eye view
    * @returns {SVGElement} Filter element
    */
@@ -153,6 +174,90 @@ export class SVGFiltersFactory {
     filter.appendChild(feFlood);
     filter.appendChild(feComposite);
     filter.appendChild(feMerge);
+    
+    return filter;
+  }
+
+  /**
+   * Create building shadow filters for different heights
+   * @returns {Array<SVGElement>} Array of filter elements
+   */
+  static createBuildingShadowFilters() {
+    const filters = [];
+    
+    // Small building shadow
+    filters.push(this.createDropShadowFilter({
+      id: 'building-shadow-small',
+      dx: 2,
+      dy: 2,
+      stdDeviation: 1.5,
+      opacity: 0.25
+    }));
+    
+    // Medium building shadow
+    filters.push(this.createDropShadowFilter({
+      id: 'building-shadow-medium',
+      dx: 3,
+      dy: 3,
+      stdDeviation: 2,
+      opacity: 0.3
+    }));
+    
+    // Large building shadow
+    filters.push(this.createDropShadowFilter({
+      id: 'building-shadow-large',
+      dx: 4,
+      dy: 4,
+      stdDeviation: 3,
+      opacity: 0.35
+    }));
+    
+    // Tall building shadow
+    filters.push(this.createDropShadowFilter({
+      id: 'building-shadow-tall',
+      dx: 6,
+      dy: 6,
+      stdDeviation: 4,
+      opacity: 0.4
+    }));
+    
+    return filters;
+  }
+
+  /**
+   * Create building 3D effect filter
+   * @returns {SVGElement} Filter element
+   */
+  static createBuilding3DEffect() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', 'building-3d-effect');
+    filter.setAttribute('width', '150%');
+    filter.setAttribute('height', '150%');
+    filter.setAttribute('x', '-25%');
+    filter.setAttribute('y', '-25%');
+    
+    // Create lighting effect
+    const feDiffuseLighting = document.createElementNS('http://www.w3.org/2000/svg', 'feDiffuseLighting');
+    feDiffuseLighting.setAttribute('in', 'SourceGraphic');
+    feDiffuseLighting.setAttribute('lighting-color', 'white');
+    feDiffuseLighting.setAttribute('surfaceScale', '2');
+    
+    const feDistantLight = document.createElementNS('http://www.w3.org/2000/svg', 'feDistantLight');
+    feDistantLight.setAttribute('azimuth', '45');
+    feDistantLight.setAttribute('elevation', '45');
+    
+    feDiffuseLighting.appendChild(feDistantLight);
+    
+    const feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+    feComposite.setAttribute('operator', 'arithmetic');
+    feComposite.setAttribute('k1', '0');
+    feComposite.setAttribute('k2', '0.8');
+    feComposite.setAttribute('k3', '0.2');
+    feComposite.setAttribute('k4', '0');
+    feComposite.setAttribute('in2', 'SourceGraphic');
+    
+    filter.appendChild(feDiffuseLighting);
+    filter.appendChild(feComposite);
     
     return filter;
   }

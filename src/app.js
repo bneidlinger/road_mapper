@@ -154,7 +154,8 @@ class RoadMapperApp {
       } else if (element.connectedRoads !== undefined) {
         // It's an intersection
         console.log('app.js: Detected intersection selection');
-        this.intersectionPropertiesPanel.show(element);
+        console.log('Calling intersectionPropertiesPanel.showForIntersection with:', element);
+        this.intersectionPropertiesPanel.showForIntersection(element);
         this.buildingPropertiesPanel.hide();
       } else {
         // It's a road or something else
@@ -239,6 +240,21 @@ class RoadMapperApp {
             setTimeout(() => {
               this.svgRenderer.updateVisibility();
             }, 50);
+            break;
+          case '3':
+            // Toggle isometric 3D view mode
+            if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+              e.preventDefault();
+              const isIsometric = this.svgRenderer.toggleIsometric();
+              console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
+              
+              // Update status bar or show notification
+              if (this.statusBar && this.statusBar.showNotification) {
+                this.statusBar.showNotification(
+                  isIsometric ? 'Isometric 3D view enabled' : 'Isometric 3D view disabled'
+                );
+              }
+            }
             break;
         }
       }

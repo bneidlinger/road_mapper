@@ -2,6 +2,9 @@
 echo Starting Road Mapper Development Server (Direct Mode)...
 echo.
 
+:: Change to project root directory (parent of scripts)
+cd /d "%~dp0\.."
+
 :: Check if node_modules exists
 if not exist "node_modules" (
     echo Installing dependencies...
@@ -9,13 +12,10 @@ if not exist "node_modules" (
     echo.
 )
 
-:: Change to current directory
-cd /d "%~dp0"
-
-:: Start Vite directly with node
-echo Starting Vite development server...
+:: Start Webpack directly with node
+echo Starting Webpack development server...
 echo.
-node "%~dp0node_modules\vite\bin\vite.js"
+node node_modules\webpack-dev-server\bin\webpack-dev-server.js
 
 :: Keep window open if server crashes
 pause
