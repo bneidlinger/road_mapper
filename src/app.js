@@ -7,6 +7,7 @@ import { Toolbar } from './components/Toolbar.js';
 import { StatusBar } from './components/StatusBar.js';
 import { IntersectionPropertiesPanel } from './components/IntersectionPropertiesPanel.js';
 import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
+import { RoadPropertiesPanel } from './components/RoadPropertiesPanel.js';
 import { Store } from './core/Store.js';
 import { TOOLS } from './core/constants.js';
 import { Grid } from './modules/grid/Grid.js';
@@ -22,6 +23,7 @@ class RoadMapperApp {
     this.statusBar = null;
     this.intersectionPropertiesPanel = null;
     this.buildingPropertiesPanel = null;
+    this.roadPropertiesPanel = null;
     this.store = null;
   }
 
@@ -83,6 +85,10 @@ class RoadMapperApp {
       this.buildingPropertiesPanel = new BuildingPropertiesPanel();
       propertiesContainer.appendChild(this.buildingPropertiesPanel.getElement());
       // BuildingPropertiesPanel mounted
+      
+      this.roadPropertiesPanel = new RoadPropertiesPanel();
+      propertiesContainer.appendChild(this.roadPropertiesPanel.getElement());
+      // RoadPropertiesPanel mounted
 
       // Initialize app state
       this.store = new Store({
@@ -143,6 +149,25 @@ class RoadMapperApp {
       this.grid.toggleSnap();
     });
 
+    // Isometric 3D toggle
+    document.getElementById('toggle-isometric')?.addEventListener('click', () => {
+      const isIsometric = this.svgRenderer.toggleIsometric();
+      console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
+      
+      // Update button state
+      const button = document.getElementById('toggle-isometric');
+      if (button) {
+        button.classList.toggle('active', isIsometric);
+      }
+      
+      // Update status bar or show notification
+      if (this.statusBar && this.statusBar.showNotification) {
+        this.statusBar.showNotification(
+          isIsometric ? 'Isometric 3D view enabled' : 'Isometric 3D view disabled'
+        );
+      }
+    });
+
     // Handle element selection events
     this.toolManager.on('elementSelected', (element) => {
       console.log('app.js: elementSelected event received:', element);
@@ -157,15 +182,23 @@ class RoadMapperApp {
         console.log('Calling intersectionPropertiesPanel.showForIntersection with:', element);
         this.intersectionPropertiesPanel.showForIntersection(element);
         this.buildingPropertiesPanel.hide();
+      } else if (element.points !== undefined) {
+        // It's a road
+        console.log('app.js: Detected road selection');
+        this.roadPropertiesPanel.show(element);
+        this.buildingPropertiesPanel.hide();
+        this.intersectionPropertiesPanel.hide();
       } else {
-        // It's a road or something else
+        // It's something else
         console.log('app.js: Detected other element selection');
+        this.roadPropertiesPanel.hide();
         this.buildingPropertiesPanel.hide();
         this.intersectionPropertiesPanel.hide();
       }
     });
     
     this.toolManager.on('elementDeselected', () => {
+      this.roadPropertiesPanel.hide();
       this.buildingPropertiesPanel.hide();
       this.intersectionPropertiesPanel.hide();
     });
@@ -179,6 +212,17 @@ class RoadMapperApp {
     
     this.buildingPropertiesPanel.on('delete-building', (building) => {
       this.elementManager.removeBuilding(building.id);
+    });
+    
+    // Set up road properties panel events
+    this.roadPropertiesPanel.on('update-road', (data) => {
+      const { road, changes } = data;
+      // Force re-render to show updated name
+      this.svgRenderer.updateRoad(road);
+    });
+    
+    this.roadPropertiesPanel.on('delete-road', (road) => {
+      this.elementManager.removeRoad(road.id);
     });
 
     // Keyboard shortcuts
@@ -247,6 +291,12 @@ class RoadMapperApp {
               e.preventDefault();
               const isIsometric = this.svgRenderer.toggleIsometric();
               console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
+              
+              // Update button state
+              const button = document.getElementById('toggle-isometric');
+              if (button) {
+                button.classList.toggle('active', isIsometric);
+              }
               
               // Update status bar or show notification
               if (this.statusBar && this.statusBar.showNotification) {

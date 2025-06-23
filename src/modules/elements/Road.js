@@ -8,6 +8,18 @@ export class Road {
     this.type = type;
     this.properties = { ...ROAD_TYPES[type] };
     this.selected = false;
+    
+    // Road naming properties
+    this.name = '';
+    this.nameDisplay = {
+      enabled: true,
+      fontSize: 14,
+      fontFamily: 'Arial, sans-serif',
+      fontWeight: 'normal',
+      color: '#ffffff',
+      opacity: 0.8,
+      offset: 20  // Distance above road
+    };
   }
 
   addPoint(x, y) {
@@ -128,12 +140,16 @@ export class Road {
     return {
       id: this.id,
       type: this.type,
-      points: this.points
+      points: this.points,
+      name: this.name,
+      nameDisplay: this.nameDisplay
     };
   }
 
   static fromJSON(data) {
     const road = new Road(data.id, data.points, data.type);
+    if (data.name !== undefined) road.name = data.name;
+    if (data.nameDisplay !== undefined) road.nameDisplay = { ...road.nameDisplay, ...data.nameDisplay };
     return road;
   }
 }

@@ -1,5 +1,6 @@
 import { SVGBaseElement } from '../SVGBaseElement.js';
 import { isometricRenderer } from '../../rendering/IsometricRenderer.js';
+import { BuildingGradientsFactory } from '../effects/BuildingGradientsFactory.js';
 
 /**
  * SVG Building Element - Wrapper for building SVG rendering
@@ -433,12 +434,30 @@ export class SVGBuildingElement extends SVGBaseElement {
         const brightness = isometricRenderer.getFaceBrightness();
         const baseColor = this.building.customColor || this.building.color || this.getBuildingColor(this.building.type);
         
-        // Create isometric shadow first
+        // Create gradients for each face
+        const rightGradient = BuildingGradientsFactory.createFaceGradient('right', baseColor, this.building.type);
+        const frontGradient = BuildingGradientsFactory.createFaceGradient('front', baseColor, this.building.type);
+        const topGradient = BuildingGradientsFactory.createFaceGradient('top', baseColor, this.building.type);
+        
+        // Add gradients to defs
+        if (this.svgManager) {
+            this.svgManager.addDef(rightGradient);
+            this.svgManager.addDef(frontGradient);
+            this.svgManager.addDef(topGradient);
+        }
+        
+        // Create enhanced isometric shadow with gradient
         if (this.building.floors > 0) {
+            const shadowGradient = BuildingGradientsFactory.createShadowGradient();
+            if (this.svgManager) {
+                this.svgManager.addDef(shadowGradient);
+            }
+            
             this.isometricShadow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             this.isometricShadow.setAttribute('d', isometricRenderer.createIsometricShadow(this.building));
-            this.isometricShadow.setAttribute('fill', 'rgba(0, 0, 0, 0.15)');
+            this.isometricShadow.setAttribute('fill', `url(#${shadowGradient.getAttribute('id')})`);
             this.isometricShadow.setAttribute('stroke', 'none');
+            this.isometricShadow.setAttribute('filter', 'blur(2px)');
             this.isometricGroup.appendChild(this.isometricShadow);
         }
         
@@ -446,24 +465,24 @@ export class SVGBuildingElement extends SVGBaseElement {
         // Right face
         this.isoRightFace = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         this.isoRightFace.setAttribute('d', faces.right);
-        this.isoRightFace.setAttribute('fill', this.adjustBrightness(baseColor, brightness.right));
-        this.isoRightFace.setAttribute('stroke', this.building.selected ? '#00ff88' : this.getBuildingStrokeColor(this.building.type));
+        this.isoRightFace.setAttribute('fill', `url(#${rightGradient.getAttribute('id')})`);
+        this.isoRightFace.setAttribute('stroke', this.building.selected ? '#00ff88' : 'rgba(0, 0, 0, 0.1)');
         this.isoRightFace.setAttribute('stroke-width', this.building.selected ? 2 : 0.5);
         this.isoRightFace.setAttribute('stroke-linejoin', 'round');
         
         // Front face
         this.isoFrontFace = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         this.isoFrontFace.setAttribute('d', faces.front);
-        this.isoFrontFace.setAttribute('fill', this.adjustBrightness(baseColor, brightness.front));
-        this.isoFrontFace.setAttribute('stroke', this.building.selected ? '#00ff88' : this.getBuildingStrokeColor(this.building.type));
+        this.isoFrontFace.setAttribute('fill', `url(#${frontGradient.getAttribute('id')})`);
+        this.isoFrontFace.setAttribute('stroke', this.building.selected ? '#00ff88' : 'rgba(0, 0, 0, 0.1)');
         this.isoFrontFace.setAttribute('stroke-width', this.building.selected ? 2 : 0.5);
         this.isoFrontFace.setAttribute('stroke-linejoin', 'round');
         
         // Top face (roof)
         this.isoTopFace = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         this.isoTopFace.setAttribute('d', faces.top);
-        this.isoTopFace.setAttribute('fill', this.getRoofColor(this.building.type));
-        this.isoTopFace.setAttribute('stroke', this.building.selected ? '#00ff88' : this.getBuildingStrokeColor(this.building.type));
+        this.isoTopFace.setAttribute('fill', `url(#${topGradient.getAttribute('id')})`);
+        this.isoTopFace.setAttribute('stroke', this.building.selected ? '#00ff88' : 'rgba(0, 0, 0, 0.05)');
         this.isoTopFace.setAttribute('stroke-width', this.building.selected ? 2 : 0.5);
         this.isoTopFace.setAttribute('stroke-linejoin', 'round');
         
@@ -482,6 +501,46 @@ export class SVGBuildingElement extends SVGBaseElement {
         
         // Add type-specific isometric details
         this.addIsometricTypeDetails();
+        
+        // Add glass windows for office and commercial buildings
+        if (this.building.type === 'office' || this.building.type === 'commercial') {
+            this.addIsometricWindows();
+        }
+    }
+    
+    /**
+     * Add realistic window patterns to isometric faces
+     */
+    addIsometricWindows() {
+        // Create glass gradient if not already created
+        const glassGradient = BuildingGradientsFactory.createGlassGradient(0.7);
+        if (this.svgManager) {
+            this.svgManager.addDef(glassGradient);
+        }
+        
+        // Create window patterns for front and right faces
+        const frontWindowPattern = BuildingGradientsFactory.createWindowPattern(this.building.type, 'front');
+        const rightWindowPattern = BuildingGradientsFactory.createWindowPattern(this.building.type, 'right');
+        
+        if (this.svgManager) {
+            this.svgManager.addDef(glassGradient); // Add the glass gradient that windows reference
+            this.svgManager.addDef(frontWindowPattern);
+            this.svgManager.addDef(rightWindowPattern);
+        }
+        
+        // Apply window patterns as overlays
+        const frontWindows = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        frontWindows.setAttribute('d', this.isoFrontFace.getAttribute('d'));
+        frontWindows.setAttribute('fill', `url(#${frontWindowPattern.getAttribute('id')})`);
+        frontWindows.setAttribute('opacity', '0.8');
+        
+        const rightWindows = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        rightWindows.setAttribute('d', this.isoRightFace.getAttribute('d'));
+        rightWindows.setAttribute('fill', `url(#${rightWindowPattern.getAttribute('id')})`);
+        rightWindows.setAttribute('opacity', '0.8');
+        
+        this.isometricGroup.appendChild(frontWindows);
+        this.isometricGroup.appendChild(rightWindows);
     }
     
     /**
@@ -786,6 +845,40 @@ export class SVGBuildingElement extends SVGBaseElement {
         // Show/hide appropriate groups
         this.standardGroup.style.display = isIsometric ? 'none' : '';
         this.isometricGroup.style.display = isIsometric ? '' : 'none';
+        
+        // Setup hover effects for isometric mode
+        if (isIsometric && this.isometricGroup) {
+            this.setupIsometricHoverEffects();
+        }
+    }
+    
+    /**
+     * Setup hover effects for isometric buildings
+     */
+    setupIsometricHoverEffects() {
+        if (this.hoverEffectsSetup || !this.isometricGroup) return;
+        
+        this.isometricGroup.style.cursor = 'pointer';
+        this.isometricGroup.style.transition = 'transform 0.2s ease, filter 0.2s ease';
+        
+        const handleMouseEnter = () => {
+            if (!this.building.selected) {
+                this.isometricGroup.style.transform = 'translateY(-2px)';
+                this.isometricGroup.style.filter = 'brightness(1.1) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))';
+            }
+        };
+        
+        const handleMouseLeave = () => {
+            if (!this.building.selected) {
+                this.isometricGroup.style.transform = '';
+                this.isometricGroup.style.filter = '';
+            }
+        };
+        
+        this.isometricGroup.addEventListener('mouseenter', handleMouseEnter);
+        this.isometricGroup.addEventListener('mouseleave', handleMouseLeave);
+        
+        this.hoverEffectsSetup = true;
     }
     
     /**

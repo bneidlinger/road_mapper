@@ -67,6 +67,11 @@ export class SVGRoadElement extends SVGBaseElement {
 
     this.group.appendChild(this.roadGroup);
     
+    // Add road name if available
+    if (this.road.name && this.road.nameDisplay.enabled) {
+      this.renderRoadName();
+    }
+    
     // Store references to key elements for later use
     this.storeElementReferences();
   }
@@ -88,6 +93,71 @@ export class SVGRoadElement extends SVGBaseElement {
 
 
 
+
+  renderRoadName() {
+    if (!this.road.name || this.road.points.length < 2) return;
+    
+    const nameDisplay = this.road.nameDisplay;
+    
+    // Calculate center point of the road
+    const midIndex = Math.floor(this.road.points.length / 2);
+    let centerX, centerY;
+    
+    if (this.road.points.length === 2) {
+      // For straight roads, use the midpoint
+      centerX = (this.road.points[0].x + this.road.points[1].x) / 2;
+      centerY = (this.road.points[0].y + this.road.points[1].y) / 2;
+    } else {
+      // For multi-segment roads, use the middle segment's midpoint
+      const p1 = this.road.points[midIndex - 1];
+      const p2 = this.road.points[midIndex];
+      centerX = (p1.x + p2.x) / 2;
+      centerY = (p1.y + p2.y) / 2;
+    }
+    
+    // Create text element
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', centerX);
+    text.setAttribute('y', centerY - nameDisplay.offset);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('class', 'road-name');
+    text.setAttribute('font-family', nameDisplay.fontFamily);
+    text.setAttribute('font-size', nameDisplay.fontSize);
+    text.setAttribute('font-weight', nameDisplay.fontWeight);
+    text.setAttribute('fill', nameDisplay.color);
+    text.setAttribute('opacity', nameDisplay.opacity);
+    text.textContent = this.road.name;
+    
+    // Add a subtle background for better readability
+    const bbox = this.estimateTextBounds(this.road.name, nameDisplay.fontSize);
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('x', centerX - bbox.width / 2 - 4);
+    background.setAttribute('y', centerY - nameDisplay.offset - bbox.height / 2 - 2);
+    background.setAttribute('width', bbox.width + 8);
+    background.setAttribute('height', bbox.height + 4);
+    background.setAttribute('fill', '#000000');
+    background.setAttribute('opacity', '0.5');
+    background.setAttribute('rx', '2');
+    background.setAttribute('class', 'road-name-background');
+    
+    // Create a group for the name
+    const nameGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    nameGroup.setAttribute('class', 'road-name-group');
+    nameGroup.appendChild(background);
+    nameGroup.appendChild(text);
+    
+    this.group.appendChild(nameGroup);
+  }
+  
+  estimateTextBounds(text, fontSize) {
+    // Rough estimation of text bounds
+    const avgCharWidth = fontSize * 0.6;
+    return {
+      width: text.length * avgCharWidth,
+      height: fontSize * 1.2
+    };
+  }
 
   renderSelection(parent, pathData, properties) {
     const selectionPath = this.createPath(pathData, {
@@ -114,6 +184,7 @@ export class SVGRoadElement extends SVGBaseElement {
       this.shouldersGroup = this.group.querySelector('.shoulders');
       this.laneMarkings = this.group.querySelector('.lane-markings');
       this.sidewalkPaths = this.group.querySelector('.sidewalks');
+      this.nameGroup = this.group.querySelector('.road-name-group');
       
       // Check if mainPath is missing
       if (!this.mainPath) {
@@ -227,6 +298,22 @@ export class SVGRoadElement extends SVGBaseElement {
         const strokeWidth = Math.max(5, Math.min(20, 0.6 / zoom));
         this.mainPath.setAttribute('stroke-width', strokeWidth);
         this.mainPath.style.strokeWidth = strokeWidth + 'px';
+      }
+    }
+    
+    // Update road name visibility based on zoom
+    if (this.nameGroup) {
+      // Hide name when in bird's eye view or too zoomed out
+      if (isBirdsEye || zoom < 0.3) {
+        this.nameGroup.style.display = 'none';
+      } else {
+        this.nameGroup.style.display = '';
+        // Scale font size slightly based on zoom for better readability
+        const nameText = this.nameGroup.querySelector('.road-name');
+        if (nameText && this.road.nameDisplay) {
+          const scaledFontSize = Math.max(10, Math.min(24, this.road.nameDisplay.fontSize * Math.sqrt(zoom)));
+          nameText.setAttribute('font-size', scaledFontSize);
+        }
       }
     }
   }

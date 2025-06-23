@@ -48,6 +48,10 @@ export class SVGRenderer {
     const shadowFilters = SVGFiltersFactory.createBuildingShadowFilters();
     shadowFilters.forEach(filter => this.svgManager.addDef(filter));
     
+    // Add SaaS-quality building filters
+    this.svgManager.addDef(SVGFiltersFactory.createAmbientOcclusionFilter());
+    this.svgManager.addDef(SVGFiltersFactory.createIsometricDropShadow());
+    
     // Add 3D effect filter
     this.svgManager.addDef(SVGFiltersFactory.createBuilding3DEffect());
     
@@ -144,19 +148,24 @@ export class SVGRenderer {
   }
 
   updateRoad(road) {
-    const svgRoad = this.svgElements.get(road.id);
-    if (svgRoad) {
+    const existingElement = this.svgElements.get(road.id);
+    if (existingElement) {
       // Remove the old element
-      svgRoad.remove();
-      
-      // Create and add the updated element
-      const element = svgRoad.createElement(this.svgManager);
-      this.svgManager.addToLayer('ground', element);
-      
-      // Update detail level
-      const isBirdsEye = this.viewport.isBirdsEyeMode();
-      svgRoad.updateDetailLevel(this.viewport.zoom, isBirdsEye);
+      existingElement.remove();
+      this.svgElements.delete(road.id);
     }
+    
+    // Create a new SVG element for the updated road
+    const svgRoad = new SVGRoadElement(road);
+    this.svgElements.set(road.id, svgRoad);
+    
+    // Create and add the element
+    const element = svgRoad.createElement(this.svgManager);
+    this.svgManager.addToLayer('ground', element);
+    
+    // Update detail level
+    const isBirdsEye = this.viewport.isBirdsEyeMode();
+    svgRoad.updateDetailLevel(this.viewport.zoom, isBirdsEye);
   }
 
   addIntersection(intersection) {

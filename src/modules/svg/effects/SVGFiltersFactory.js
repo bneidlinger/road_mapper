@@ -261,4 +261,114 @@ export class SVGFiltersFactory {
     
     return filter;
   }
+
+  /**
+   * Create ambient occlusion filter for buildings
+   */
+  static createAmbientOcclusionFilter() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', 'ambient-occlusion');
+    filter.setAttribute('x', '-50%');
+    filter.setAttribute('y', '-50%');
+    filter.setAttribute('width', '200%');
+    filter.setAttribute('height', '200%');
+    
+    // Create inner shadow effect
+    const flood = document.createElementNS('http://www.w3.org/2000/svg', 'feFlood');
+    flood.setAttribute('flood-color', '#000000');
+    flood.setAttribute('flood-opacity', '0.3');
+    flood.setAttribute('result', 'shadowColor');
+    
+    const composite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+    composite.setAttribute('in', 'shadowColor');
+    composite.setAttribute('in2', 'SourceAlpha');
+    composite.setAttribute('operator', 'in');
+    composite.setAttribute('result', 'shadow');
+    
+    const morphology = document.createElementNS('http://www.w3.org/2000/svg', 'feMorphology');
+    morphology.setAttribute('in', 'SourceAlpha');
+    morphology.setAttribute('operator', 'dilate');
+    morphology.setAttribute('radius', '1');
+    morphology.setAttribute('result', 'dilated');
+    
+    const gaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+    gaussianBlur.setAttribute('in', 'dilated');
+    gaussianBlur.setAttribute('stdDeviation', '3');
+    gaussianBlur.setAttribute('result', 'blurred');
+    
+    const composite2 = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+    composite2.setAttribute('in', 'shadow');
+    composite2.setAttribute('in2', 'blurred');
+    composite2.setAttribute('operator', 'out');
+    composite2.setAttribute('result', 'innerShadow');
+    
+    const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+    const mergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    mergeNode1.setAttribute('in', 'SourceGraphic');
+    const mergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    mergeNode2.setAttribute('in', 'innerShadow');
+    
+    merge.appendChild(mergeNode1);
+    merge.appendChild(mergeNode2);
+    
+    filter.appendChild(flood);
+    filter.appendChild(composite);
+    filter.appendChild(morphology);
+    filter.appendChild(gaussianBlur);
+    filter.appendChild(composite2);
+    filter.appendChild(merge);
+    
+    return filter;
+  }
+
+  /**
+   * Create realistic drop shadow for isometric buildings
+   */
+  static createIsometricDropShadow() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', 'isometric-drop-shadow');
+    filter.setAttribute('x', '-50%');
+    filter.setAttribute('y', '-50%');
+    filter.setAttribute('width', '300%');
+    filter.setAttribute('height', '300%');
+    
+    const gaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+    gaussianBlur.setAttribute('in', 'SourceAlpha');
+    gaussianBlur.setAttribute('stdDeviation', '4');
+    gaussianBlur.setAttribute('result', 'blur');
+    
+    const offset = document.createElementNS('http://www.w3.org/2000/svg', 'feOffset');
+    offset.setAttribute('in', 'blur');
+    offset.setAttribute('dx', '6');
+    offset.setAttribute('dy', '6');
+    offset.setAttribute('result', 'offsetBlur');
+    
+    const flood = document.createElementNS('http://www.w3.org/2000/svg', 'feFlood');
+    flood.setAttribute('flood-color', '#000000');
+    flood.setAttribute('flood-opacity', '0.2');
+    flood.setAttribute('result', 'color');
+    
+    const composite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+    composite.setAttribute('in', 'color');
+    composite.setAttribute('in2', 'offsetBlur');
+    composite.setAttribute('operator', 'in');
+    composite.setAttribute('result', 'shadow');
+    
+    const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+    const mergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    mergeNode1.setAttribute('in', 'shadow');
+    const mergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+    mergeNode2.setAttribute('in', 'SourceGraphic');
+    
+    merge.appendChild(mergeNode1);
+    merge.appendChild(mergeNode2);
+    
+    filter.appendChild(gaussianBlur);
+    filter.appendChild(offset);
+    filter.appendChild(flood);
+    filter.appendChild(composite);
+    filter.appendChild(merge);
+    
+    return filter;
+  }
 }
