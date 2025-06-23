@@ -36,7 +36,7 @@ module.exports = (env, argv) => {
     plugins: [
       // Main app
       new HtmlWebpackPlugin({
-        template: isProduction ? './index-gh-pages.html' : './index.html',
+        template: isProduction ? './archive/dev-files/index-gh-pages.html' : './index.html',
         filename: 'app.html',
         inject: 'body'
       }),
