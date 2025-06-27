@@ -1,4 +1,5 @@
 import { EventEmitter } from '../../core/EventEmitter.js';
+import { gradientPool } from './effects/GradientPool.js';
 
 export class SVGManager extends EventEmitter {
   constructor(containerId) {
@@ -23,6 +24,9 @@ export class SVGManager extends EventEmitter {
     // Create defs for patterns, gradients, etc.
     this.defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     this.svg.appendChild(this.defs);
+    
+    // Initialize gradient pool
+    gradientPool.init(this.svg);
     
     // Create layer groups
     this.createLayers();

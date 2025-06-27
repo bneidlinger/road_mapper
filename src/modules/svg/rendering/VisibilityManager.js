@@ -82,12 +82,33 @@ export class VisibilityManager {
    */
   updateElementDetails(zoom, svgElements) {
     const isBirdsEye = this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
-    // Update element details based on zoom level
+    const visibleBounds = this.getExpandedViewportBounds();
     
     svgElements.forEach((item, id) => {
       // Handle both direct elements and wrapped elements (like buildings)
       const element = item.element || item;
       const dataObject = item.building || item.road || item.intersection || element;
+      
+      // Check if element is in viewport for buildings
+      if (item.building) {
+        const building = item.building;
+        const inViewport = this.isInViewport(building, visibleBounds);
+        
+        if (!inViewport) {
+          // Hide off-screen buildings
+          if (item.getElement) {
+            const el = item.getElement();
+            if (el) el.style.display = 'none';
+          }
+          return; // Skip further processing
+        } else {
+          // Show visible buildings
+          if (item.getElement) {
+            const el = item.getElement();
+            if (el) el.style.display = '';
+          }
+        }
+      }
       
       // Special handling for SVGRoadElement and SVGIntersectionElement which are stored directly
       if (item && item.updateDetailLevel) {
@@ -138,6 +159,41 @@ export class VisibilityManager {
     return this.viewport ? this.viewport.isBirdsEyeMode() : zoom < ZOOM_THRESHOLDS.BIRDS_EYE;
   }
 
+  /**
+   * Get expanded viewport bounds for culling
+   */
+  getExpandedViewportBounds() {
+    if (!this.viewport) return null;
+    
+    const bounds = this.viewport.getVisibleBounds();
+    const expansion = 200; // Expand bounds by 200 units in each direction
+    
+    return {
+      left: bounds.x - expansion,
+      right: bounds.x + bounds.width + expansion,
+      top: bounds.y - expansion,
+      bottom: bounds.y + bounds.height + expansion
+    };
+  }
+  
+  /**
+   * Check if building is in viewport
+   */
+  isInViewport(building, bounds) {
+    if (!bounds) return true; // Show all if no bounds
+    
+    // Check if building rectangle overlaps with viewport
+    const buildingRight = building.x + building.width;
+    const buildingBottom = building.y + building.height;
+    
+    return !(
+      building.x > bounds.right ||
+      buildingRight < bounds.left ||
+      building.y > bounds.bottom ||
+      buildingBottom < bounds.top
+    );
+  }
+  
   /**
    * Get detail level for zoom
    */

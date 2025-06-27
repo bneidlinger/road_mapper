@@ -347,13 +347,13 @@
             let currentSubCategory = null;
 
             for (const line of lines) {
-                // Version header
-                const versionMatch = line.match(/^## \[([\d.]+(?:-\w+)?)\] - (.+)$/);
+                // Version header - handle both versioned releases and "Unreleased"
+                const versionMatch = line.match(/^## \[([\d.]+(?:-\w+)?|Unreleased)\](?: - (.+))?$/);
                 if (versionMatch) {
                     if (currentVersion) versions.push(currentVersion);
                     currentVersion = {
                         version: versionMatch[1],
-                        date: versionMatch[2],
+                        date: versionMatch[2] || 'In Development',
                         changes: {}
                     };
                     currentCategory = null;

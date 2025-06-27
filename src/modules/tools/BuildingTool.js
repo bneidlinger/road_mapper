@@ -66,18 +66,23 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseUp(event, worldPos) {
-        console.log('BuildingTool.onMouseUp called:', {
-            button: event.button,
-            buttons: event.buttons,
-            isDrawing: this.isDrawing,
-            mouseIsDown: this.mouseIsDown,
-            hasDrawnPreview: this.hasDrawnPreview,
-            startPoint: this.startPoint,
-            previewRect: this.previewRect,
-            width: this.previewRect?.width,
-            height: this.previewRect?.height,
-            sizeCheck: this.previewRect ? `${this.previewRect.width} > 10 && ${this.previewRect.height} > 10 = ${this.previewRect.width > 10 && this.previewRect.height > 10}` : 'N/A'
-        });
+        console.log('BuildingTool.onMouseUp - State check:');
+        console.log('  - event.button:', event.button);
+        console.log('  - mouseIsDown:', this.mouseIsDown);
+        console.log('  - isDrawing:', this.isDrawing);
+        console.log('  - hasDrawnPreview:', this.hasDrawnPreview);
+        console.log('  - startPoint:', this.startPoint);
+        console.log('  - previewRect:', this.previewRect);
+        if (this.previewRect) {
+            console.log('  - preview dimensions:', this.previewRect.width, 'x', this.previewRect.height);
+            console.log('  - size check (>10):', this.previewRect.width > 10 && this.previewRect.height > 10);
+        }
+        
+        // Prevent double processing
+        if (!this.mouseIsDown || !this.isDrawing) {
+            console.log('BuildingTool.onMouseUp - Already processed, skipping');
+            return;
+        }
         
         // Only process if we were actually drawing, had a preview, and it's the left mouse button
         if (event.button === 0 && this.mouseIsDown && this.isDrawing && this.hasDrawnPreview && 
@@ -209,8 +214,10 @@ export class BuildingTool extends BaseTool {
     }
     
     handleWindowMouseUp(event) {
-        console.log('Window mouseup detected in BuildingTool');
-        if (this.isDrawing && this.mouseIsDown) {
+        console.log('Window mouseup detected in BuildingTool - isDrawing:', this.isDrawing, 'mouseIsDown:', this.mouseIsDown);
+        // Only handle if we haven't already processed this mouse up
+        if (this.isDrawing && this.mouseIsDown && event.button === 0) {
+            console.log('Processing window mouseup as backup');
             // Convert to world position
             const worldPos = this.toolManager.getWorldPosition(event);
             this.onMouseUp(event, worldPos);

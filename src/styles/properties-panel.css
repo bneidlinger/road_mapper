@@ -468,16 +468,80 @@ input[readonly] {
   font-size: 0.875rem;
 }
 
+/* Road Properties Panel Form Elements */
+.road-properties select,
+.road-properties input[type="text"],
+.road-properties input[type="color"],
+.road-properties input[type="checkbox"],
+.road-properties input[type="range"] {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.road-properties input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+}
+
+.road-properties select:focus,
+.road-properties input[type="text"]:focus,
+.road-properties input[type="color"]:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-bg);
+}
+
+.road-properties .properties-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.road-properties .apply-btn,
+.road-properties .delete-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  border: none;
+}
+
+.road-properties .apply-btn {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+.road-properties .apply-btn:hover {
+  background: var(--accent-primary-hover);
+}
+
+.road-properties .delete-btn {
+  background: #ff4466;
+  color: white;
+}
+
+.road-properties .delete-btn:hover {
+  background: #ff2244;
+}
+
 /* Road name text styling in SVG */
-.road-name {
+svg .road-name {
   pointer-events: none;
   user-select: none;
 }
 
-.road-name-background {
+svg .road-name-background {
   pointer-events: none;
 }
 
-.road-name-group {
+svg .road-name-group {
   pointer-events: none;
 }

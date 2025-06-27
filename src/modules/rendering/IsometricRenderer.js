@@ -129,13 +129,98 @@ export class IsometricRenderer {
             corners[key].y += offsetY;
         });
         
+        // Create roof based on type
+        const roofType = building.roofType || 'flat';
+        let topPath = '';
+        let additionalFaces = {};
+        
+        switch (roofType) {
+            case 'gabled':
+                // Create peaked roof
+                const peakHeight = Math.min(width, height) * 0.3;
+                const ridgeNorth = this.toIsometric(x + width / 2, y, z + peakHeight);
+                const ridgeSouth = this.toIsometric(x + width / 2, y + height, z + peakHeight);
+                
+                ridgeNorth.x += offsetX;
+                ridgeNorth.y += offsetY;
+                ridgeSouth.x += offsetX;
+                ridgeSouth.y += offsetY;
+                
+                // West slope
+                topPath = `M ${corners.topNW.x} ${corners.topNW.y} 
+                          L ${ridgeNorth.x} ${ridgeNorth.y} 
+                          L ${ridgeSouth.x} ${ridgeSouth.y} 
+                          L ${corners.topSW.x} ${corners.topSW.y} Z`;
+                
+                // East slope (additional face)
+                additionalFaces.roofEast = `M ${ridgeNorth.x} ${ridgeNorth.y} 
+                                           L ${corners.topNE.x} ${corners.topNE.y} 
+                                           L ${corners.topSE.x} ${corners.topSE.y} 
+                                           L ${ridgeSouth.x} ${ridgeSouth.y} Z`;
+                break;
+                
+            case 'hipped':
+                // Create hipped roof with slopes on all sides
+                const hipInset = Math.min(width, height) * 0.25;
+                const hipHeight = Math.min(width, height) * 0.25;
+                const hipNW = this.toIsometric(x + hipInset, y + hipInset, z + hipHeight);
+                const hipNE = this.toIsometric(x + width - hipInset, y + hipInset, z + hipHeight);
+                const hipSE = this.toIsometric(x + width - hipInset, y + height - hipInset, z + hipHeight);
+                const hipSW = this.toIsometric(x + hipInset, y + height - hipInset, z + hipHeight);
+                
+                [hipNW, hipNE, hipSE, hipSW].forEach(point => {
+                    point.x += offsetX;
+                    point.y += offsetY;
+                });
+                
+                // Main top face
+                topPath = `M ${hipNW.x} ${hipNW.y} 
+                          L ${hipNE.x} ${hipNE.y} 
+                          L ${hipSE.x} ${hipSE.y} 
+                          L ${hipSW.x} ${hipSW.y} Z`;
+                          
+                // Hip slopes
+                additionalFaces.hipNorth = `M ${corners.topNW.x} ${corners.topNW.y} 
+                                           L ${corners.topNE.x} ${corners.topNE.y} 
+                                           L ${hipNE.x} ${hipNE.y} 
+                                           L ${hipNW.x} ${hipNW.y} Z`;
+                additionalFaces.hipSouth = `M ${hipSW.x} ${hipSW.y} 
+                                           L ${hipSE.x} ${hipSE.y} 
+                                           L ${corners.topSE.x} ${corners.topSE.y} 
+                                           L ${corners.topSW.x} ${corners.topSW.y} Z`;
+                break;
+                
+            case 'shed':
+                // Create sloped roof
+                const shedHeight = Math.min(width, height) * 0.2;
+                const shedNE = this.toIsometric(x + width, y, z + shedHeight);
+                const shedSE = this.toIsometric(x + width, y + height, z + shedHeight);
+                
+                shedNE.x += offsetX;
+                shedNE.y += offsetY;
+                shedSE.x += offsetX;
+                shedSE.y += offsetY;
+                
+                topPath = `M ${corners.topNW.x} ${corners.topNW.y} 
+                          L ${shedNE.x} ${shedNE.y} 
+                          L ${shedSE.x} ${shedSE.y} 
+                          L ${corners.topSW.x} ${corners.topSW.y} Z`;
+                break;
+                
+            case 'flat':
+            default:
+                // Flat roof
+                topPath = `M ${corners.topNW.x} ${corners.topNW.y} 
+                          L ${corners.topNE.x} ${corners.topNE.y} 
+                          L ${corners.topSE.x} ${corners.topSE.y} 
+                          L ${corners.topSW.x} ${corners.topSW.y} Z`;
+                break;
+        }
+        
         // Create paths for each visible face
         const faces = {
             // Top face (roof)
-            top: `M ${corners.topNW.x} ${corners.topNW.y} 
-                  L ${corners.topNE.x} ${corners.topNE.y} 
-                  L ${corners.topSE.x} ${corners.topSE.y} 
-                  L ${corners.topSW.x} ${corners.topSW.y} Z`,
+            top: topPath,
             
             // Right face (if visible)
             right: `M ${corners.topNE.x} ${corners.topNE.y} 
@@ -147,7 +232,10 @@ export class IsometricRenderer {
             front: `M ${corners.topSE.x} ${corners.topSE.y} 
                     L ${corners.bottomSE.x} ${corners.bottomSE.y} 
                     L ${corners.bottomSW.x} ${corners.bottomSW.y} 
-                    L ${corners.topSW.x} ${corners.topSW.y} Z`
+                    L ${corners.topSW.x} ${corners.topSW.y} Z`,
+                    
+            // Additional roof faces
+            ...additionalFaces
         };
         
         return { faces, corners, height: z, offset: { x: offsetX, y: offsetY } };

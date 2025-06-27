@@ -1,6 +1,7 @@
 import { Building } from './elements/Building.js';
 import { BUILDING_TYPES } from '../core/constants.js';
 import { CityBlockDetector } from './CityBlockDetector.js';
+import { BuildingVarietyGenerator } from './generation/BuildingVarietyGenerator.js';
 
 export class BuildingGenerator {
     constructor(elementManager) {
@@ -9,6 +10,7 @@ export class BuildingGenerator {
         this.maxBuildingSize = 100;
         this.minSetback = 5; // Minimum distance from roads (reduced for better placement)
         this.blockPadding = 10; // Padding inside blocks (reduced)
+        this.varietyGenerator = new BuildingVarietyGenerator();
     }
 
     /**
@@ -224,37 +226,9 @@ export class BuildingGenerator {
     /**
      * Generate a building for a lot
      */
-    generateBuildingForLot(lot) {
-        const setback = 5; // Building setback from lot boundaries
-        
-        // Determine building type based on lot size
-        let type = 'residential';
-        const area = lot.width * lot.height;
-        if (area > 3000) {
-            type = Math.random() > 0.5 ? 'commercial' : 'office';
-        } else if (area > 2000) {
-            type = Math.random() > 0.7 ? 'commercial' : 'residential';
-        }
-        
-        // Calculate building dimensions with setback
-        const buildingWidth = lot.width - (setback * 2);
-        const buildingHeight = lot.height - (setback * 2);
-        
-        // Create building
-        const buildingId = `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const building = new Building(
-            buildingId,
-            lot.x + setback,
-            lot.y + setback,
-            buildingWidth,
-            buildingHeight,
-            type
-        );
-        
-        // Add some rotation for variety (-5 to 5 degrees)
-        building.rotation = (Math.random() - 0.5) * 10;
-        
-        return building;
+    generateBuildingForLot(lot, context = {}) {
+        // Use the variety generator for more realistic buildings
+        return this.varietyGenerator.generateVariedBuilding(lot, context);
     }
 
     /**

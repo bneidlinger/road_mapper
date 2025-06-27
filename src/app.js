@@ -5,7 +5,7 @@ import { ToolManager } from './modules/tools/ToolManager.js';
 import { SVGRenderer } from './modules/svg/SVGRenderer.js';
 import { Toolbar } from './components/Toolbar.js';
 import { StatusBar } from './components/StatusBar.js';
-import { IntersectionPropertiesPanel } from './components/IntersectionPropertiesPanel.js';
+import { IntersectionPropertiesPanel } from './components/intersection/IntersectionPropertiesPanel.js';
 import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
 import { RoadPropertiesPanel } from './components/RoadPropertiesPanel.js';
 import { Store } from './core/Store.js';

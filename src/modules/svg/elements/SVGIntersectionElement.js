@@ -5,7 +5,8 @@ import { CrossIntersectionRenderer } from '../renderers/CrossIntersectionRendere
 import { SimpleIntersectionRenderer } from '../renderers/SimpleIntersectionRenderer.js';
 import { IntersectionDetailsRenderer } from '../renderers/IntersectionDetailsRenderer.js';
 import { RealisticIntersectionRenderer } from '../renderers/RealisticIntersectionRenderer.js';
-import { RealisticControlsRenderer } from '../renderers/RealisticControlsRenderer.js';
+import { RealisticControlsRenderer } from '../controls/RealisticControlsRenderer.js';
+import { TrafficControlEffects } from '../controls/TrafficControlEffects.js';
 
 export class SVGIntersectionElement extends SVGBaseElement {
   constructor(intersection, viewport, elementManager) {
@@ -52,11 +53,17 @@ export class SVGIntersectionElement extends SVGBaseElement {
     
     // Check if glow filters already exist
     if (!defs.querySelector('#glow-red')) {
-      const filters = this.controlsRenderer.createGlowFilters();
-      // Move filter children to main defs
-      while (filters.firstChild) {
-        defs.appendChild(filters.firstChild);
-      }
+      // Create glow filters for traffic lights
+      const colors = {
+        red: { color: '#ff0000', intensity: '3' },
+        yellow: { color: '#ffaa00', intensity: '3' },
+        green: { color: '#00ff00', intensity: '3' }
+      };
+      
+      Object.entries(colors).forEach(([name, config]) => {
+        const filter = TrafficControlEffects.createGlowFilter(`glow-${name}`, config.color, config.intensity);
+        defs.appendChild(filter);
+      });
     }
   }
 

@@ -2,7 +2,7 @@ import { SVGManager } from './SVGManager.js';
 import { SVGViewport } from './SVGViewport.js';
 import { SVGRoadElement } from './elements/SVGRoadElement.js';
 import { SVGIntersectionElement } from './elements/SVGIntersectionElement.js';
-import { SVGBuildingElement } from './elements/SVGBuildingElement.js';
+import { SVGBuildingElement } from './elements/building/SVGBuildingElement.js';
 import { ROAD_COLORS } from '../../core/constants.js';
 import { ZOOM_THRESHOLDS } from '../effects/EffectConstants.js';
 import { SVGFiltersFactory } from './effects/SVGFiltersFactory.js';

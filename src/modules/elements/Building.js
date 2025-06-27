@@ -16,6 +16,7 @@ export class Building {
         this.color = this.getColorForType();
         this.customColor = null; // Allow custom color override
         this.footprint = this.generateFootprint();
+        this.roofType = this.generateRoofType();
         
         // Type-specific properties
         this.properties = this.generateDefaultProperties();
@@ -41,6 +42,53 @@ export class Building {
             office: '#9C27B0'
         };
         return colors[this.type] || colors.residential;
+    }
+    
+    generateRoofType() {
+        // Different building types have different roof type preferences
+        const roofPreferences = {
+            residential: {
+                gabled: 0.4,
+                hipped: 0.3,
+                flat: 0.15,
+                shed: 0.1,
+                mansard: 0.05
+            },
+            commercial: {
+                flat: 0.6,
+                shed: 0.25,
+                gabled: 0.1,
+                hipped: 0.05,
+                mansard: 0
+            },
+            industrial: {
+                flat: 0.7,
+                shed: 0.25,
+                gabled: 0.05,
+                hipped: 0,
+                mansard: 0
+            },
+            office: {
+                flat: 0.8,
+                mansard: 0.1,
+                shed: 0.05,
+                gabled: 0.025,
+                hipped: 0.025
+            }
+        };
+        
+        const preferences = roofPreferences[this.type] || roofPreferences.residential;
+        const rand = Math.random();
+        let cumulative = 0;
+        
+        for (const [roofType, probability] of Object.entries(preferences)) {
+            cumulative += probability;
+            if (rand <= cumulative) {
+                return roofType;
+            }
+        }
+        
+        return 'flat'; // fallback
     }
 
     generateDefaultProperties() {
@@ -124,6 +172,25 @@ export class Building {
                 { x: this.x, y: this.y + this.height }
             ]
         };
+    }
+
+    updateProperties(changes) {
+        // Update basic properties
+        if (changes.type !== undefined) this.type = changes.type;
+        if (changes.floors !== undefined) this.floors = changes.floors;
+        if (changes.roofType !== undefined) this.roofType = changes.roofType;
+        if (changes.rotation !== undefined) this.rotation = changes.rotation;
+        if (changes.customColor !== undefined) this.customColor = changes.customColor;
+        
+        // Update type-specific properties
+        if (changes.properties) {
+            this.properties = { ...this.properties, ...changes.properties };
+        }
+        
+        // Regenerate color if type changed and no custom color
+        if (changes.type !== undefined && !this.customColor) {
+            this.color = this.getColorForType();
+        }
     }
 
     draw() {
@@ -268,6 +335,10 @@ export class Building {
             this.floors = changes.floors;
         }
         
+        if (changes.roofType !== undefined) {
+            this.roofType = changes.roofType;
+        }
+        
         if (changes.rotation !== undefined) {
             this.rotation = changes.rotation;
         }
@@ -296,6 +367,7 @@ export class Building {
             type: this.type,
             rotation: this.rotation,
             floors: this.floors,
+            roofType: this.roofType,
             customColor: this.customColor,
             properties: this.properties
         };
@@ -305,6 +377,7 @@ export class Building {
         const building = new Building(data.id, data.x, data.y, data.width, data.height, data.type);
         building.rotation = data.rotation || 0;
         building.floors = data.floors || building.generateFloors();
+        building.roofType = data.roofType || building.roofType;
         building.customColor = data.customColor || null;
         building.properties = data.properties || building.generateDefaultProperties();
         return building;

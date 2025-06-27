@@ -39,6 +39,17 @@ export class BuildingPropertiesPanel extends EventEmitter {
                 </div>
                 
                 <div class="property-group">
+                    <label>Roof Type</label>
+                    <select class="building-roof-type">
+                        <option value="flat">Flat</option>
+                        <option value="gabled">Gabled</option>
+                        <option value="hipped">Hipped</option>
+                        <option value="shed">Shed</option>
+                        <option value="mansard">Mansard</option>
+                    </select>
+                </div>
+                
+                <div class="property-group">
                     <label>Rotation</label>
                     <div class="input-group">
                         <input type="range" class="building-rotation" min="-180" max="180" value="0" step="5">
@@ -213,6 +224,7 @@ export class BuildingPropertiesPanel extends EventEmitter {
         this.element.querySelector('.building-id').value = building.id;
         this.element.querySelector('.building-type').value = building.type;
         this.element.querySelector('.building-floors').value = building.floors || 1;
+        this.element.querySelector('.building-roof-type').value = building.roofType || 'flat';
         this.element.querySelector('.building-rotation').value = building.rotation || 0;
         this.element.querySelector('.rotation-value').textContent = `${building.rotation || 0}°`;
 
@@ -284,6 +296,7 @@ export class BuildingPropertiesPanel extends EventEmitter {
         const changes = {
             type: this.element.querySelector('.building-type').value,
             floors: parseInt(this.element.querySelector('.building-floors').value),
+            roofType: this.element.querySelector('.building-roof-type').value,
             rotation: parseFloat(this.element.querySelector('.building-rotation').value),
             properties: {}
         };

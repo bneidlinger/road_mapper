@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Name Input Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+        }
+        .road-name {
+            /* Copy exact styles from properties panel */
+            width: 100%;
+            background: var(--bg-primary, #1a1a1a);
+            border: 1px solid var(--border-color, #333);
+            border-radius: 4px;
+            padding: 0.5rem;
+            color: var(--text-primary, #fff);
+            font-size: 0.875rem;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #4a9eff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+    </style>
+</head>
+<body>
+    <h1>Road Name Input Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Basic Input</h2>
+        <input type="text" id="test1" placeholder="Type here to test basic input">
+        <div class="status" id="status1">Status: Waiting for input...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Road Name Input (with class)</h2>
+        <input type="text" class="road-name" id="test2" placeholder="Enter road name">
+        <div class="status" id="status2">Status: Waiting for input...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Input with Event Listeners</h2>
+        <input type="text" id="test3" placeholder="Test events">
+        <div class="status" id="status3">Events: </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Check Z-Index Issues</h2>
+        <button onclick="checkZIndex()">Check Z-Index</button>
+        <button onclick="findOverlappingElements()">Find Overlapping Elements</button>
+        <div class="status" id="status4">Click buttons to check...</div>
+    </div>
+
+    <script>
+        // Test 1: Basic input functionality
+        document.getElementById('test1').addEventListener('input', (e) => {
+            document.getElementById('status1').textContent = `Status: Input value = "${e.target.value}"`;
+        });
+
+        // Test 2: Road name input
+        document.getElementById('test2').addEventListener('input', (e) => {
+            document.getElementById('status2').textContent = `Status: Road name = "${e.target.value}"`;
+        });
+
+        // Test 3: All events
+        const test3 = document.getElementById('test3');
+        const status3 = document.getElementById('status3');
+        let events = [];
+        
+        ['focus', 'blur', 'input', 'keydown', 'keyup', 'click'].forEach(eventType => {
+            test3.addEventListener(eventType, (e) => {
+                events.push(eventType);
+                if (events.length > 10) events.shift();
+                status3.textContent = `Events: ${events.join(', ')}`;
+            });
+        });
+
+        // Test 4: Z-index checker
+        function checkZIndex() {
+            const input = document.querySelector('.road-name');
+            if (input) {
+                const computed = window.getComputedStyle(input);
+                const rect = input.getBoundingClientRect();
+                document.getElementById('status4').innerHTML = `
+                    Z-Index: ${computed.zIndex}<br>
+                    Position: ${computed.position}<br>
+                    Display: ${computed.display}<br>
+                    Pointer Events: ${computed.pointerEvents}<br>
+                    Disabled: ${input.disabled}<br>
+                    ReadOnly: ${input.readOnly}<br>
+                    Bounds: ${rect.x}, ${rect.y}, ${rect.width}x${rect.height}
+                `;
+            }
+        }
+
+        function findOverlappingElements() {
+            const input = document.querySelector('.road-name');
+            if (input) {
+                const rect = input.getBoundingClientRect();
+                const elements = document.elementsFromPoint(rect.x + rect.width/2, rect.y + rect.height/2);
+                const info = elements.map(el => `${el.tagName}.${el.className}`).join('<br>');
+                document.getElementById('status4').innerHTML = `Elements at input center:<br>${info}`;
+            }
+        }
+
+        // Log when page loads
+        window.addEventListener('load', () => {
+            console.log('Test page loaded');
+            console.log('All inputs:', document.querySelectorAll('input[type="text"]'));
+        });
+    </script>
+</body>
+</html>
