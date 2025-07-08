@@ -2,7 +2,8 @@ import { EventEmitter } from '../../core/EventEmitter.js';
 import { TOOLS } from '../../core/constants.js';
 import { SelectTool } from './SelectTool.js';
 import { RoadTool } from './RoadTool.js';
-import { IntersectionTool } from './IntersectionTool.js';
+import { IntersectionTool } from '../../tools/intersectionTool.js';
+import { ZoneTool } from '../../tools/zoneTool.js';
 import { DeleteTool } from './DeleteTool.js';
 import { PanTool } from './PanTool.js';
 import { BuildingTool } from './BuildingTool.js';
@@ -19,6 +20,7 @@ export class ToolManager extends EventEmitter {
       [TOOLS.SELECT]: new SelectTool(this),
       [TOOLS.ROAD]: new RoadTool(this),
       [TOOLS.INTERSECTION]: new IntersectionTool(this),
+      [TOOLS.ZONE]: new ZoneTool(this),
       [TOOLS.DELETE]: new DeleteTool(this),
       [TOOLS.PAN]: new PanTool(this),
       [TOOLS.BUILDING]: new BuildingTool(this)
@@ -83,8 +85,9 @@ export class ToolManager extends EventEmitter {
     // Update class on SVG container for tool-specific styling
     if (this.canvas && this.canvas.tagName === 'svg') {
       // Remove all tool classes
-      this.canvas.classList.remove('select-tool-active', 'road-tool-active', 
-        'building-tool-active', 'intersection-tool-active', 'delete-tool-active', 'pan-tool-active');
+      this.canvas.classList.remove('select-tool-active', 'road-tool-active',
+        'building-tool-active', 'intersection-tool-active', 'zone-tool-active',
+        'delete-tool-active', 'pan-tool-active');
       
       // Add current tool class
       const toolClass = toolName.toLowerCase() + '-tool-active';
