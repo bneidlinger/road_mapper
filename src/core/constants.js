@@ -94,3 +94,6 @@ export const BUILDING_TYPES = {
   INDUSTRIAL: 'industrial',
   OFFICE: 'office'
 };
+
+// Global debug flag for conditional logging
+export const DEBUG = false;

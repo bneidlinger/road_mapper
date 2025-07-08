@@ -1,5 +1,5 @@
 import { EventEmitter } from '../core/EventEmitter.js';
-import { BUILDING_TYPES } from '../core/constants.js';
+import { BUILDING_TYPES, DEBUG } from '../core/constants.js';
 
 export class BuildingPropertiesPanel extends EventEmitter {
     constructor() {
@@ -201,7 +201,7 @@ export class BuildingPropertiesPanel extends EventEmitter {
     }
 
     show(building) {
-        console.log('BuildingPropertiesPanel.show called with:', building);
+        if (DEBUG) console.log('BuildingPropertiesPanel.show called with:', building);
         if (!building) return;
         
         this.currentBuilding = building;
@@ -213,12 +213,12 @@ export class BuildingPropertiesPanel extends EventEmitter {
         this.element.style.position = 'fixed';
         this.element.style.top = '100px';
         this.element.style.right = '20px';
-        console.log('BuildingPropertiesPanel display set to block');
-        console.log('Panel element:', this.element);
-        console.log('Panel parent:', this.element.parentElement);
-        console.log('Panel computed style:', window.getComputedStyle(this.element).display);
-        console.log('Panel offsetWidth:', this.element.offsetWidth);
-        console.log('Panel offsetHeight:', this.element.offsetHeight);
+        if (DEBUG) console.log('BuildingPropertiesPanel display set to block');
+        if (DEBUG) console.log('Panel element:', this.element);
+        if (DEBUG) console.log('Panel parent:', this.element.parentElement);
+        if (DEBUG) console.log('Panel computed style:', window.getComputedStyle(this.element).display);
+        if (DEBUG) console.log('Panel offsetWidth:', this.element.offsetWidth);
+        if (DEBUG) console.log('Panel offsetHeight:', this.element.offsetHeight);
 
         // Update UI with building data
         this.element.querySelector('.building-id').value = building.id;

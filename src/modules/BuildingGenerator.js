@@ -1,5 +1,5 @@
 import { Building } from './elements/Building.js';
-import { BUILDING_TYPES } from '../core/constants.js';
+import { BUILDING_TYPES, DEBUG } from '../core/constants.js';
 import { CityBlockDetector } from './CityBlockDetector.js';
 import { BuildingVarietyGenerator } from './generation/BuildingVarietyGenerator.js';
 
@@ -20,15 +20,15 @@ export class BuildingGenerator {
         const roads = this.elementManager.getRoads();
         const blocks = [];
         
-        console.log('Detecting city blocks...');
-        console.log('Number of roads:', roads.length);
+        if (DEBUG) console.log('Detecting city blocks...');
+        if (DEBUG) console.log('Number of roads:', roads.length);
         
         // For now, we'll use a simple grid-based approach
         // In a full implementation, this would use polygon intersection
         // and computational geometry to find actual enclosed areas
         
         const bounds = this.elementManager.getBounds();
-        console.log('Bounds:', bounds);
+        if (DEBUG) console.log('Bounds:', bounds);
         
         const blockSize = 200; // Size of each potential block
         
@@ -56,7 +56,7 @@ export class BuildingGenerator {
             }
         }
         
-        console.log('Detected blocks:', blocks.length);
+        if (DEBUG) console.log('Detected blocks:', blocks.length);
         return blocks;
     }
 
@@ -86,7 +86,7 @@ export class BuildingGenerator {
         const p2InRect = this.pointInRect(p2, rect);
         
         if (p1InRect || p2InRect) {
-            console.log(`Line endpoint inside rect: p1=${p1InRect}, p2=${p2InRect}`);
+            if (DEBUG) console.log(`Line endpoint inside rect: p1=${p1InRect}, p2=${p2InRect}`);
             return true;
         }
         
@@ -100,7 +100,7 @@ export class BuildingGenerator {
         
         for (const edge of edges) {
             if (this.linesIntersect(p1, p2, edge.p1, edge.p2)) {
-                console.log(`Line intersects rectangle edge`);
+                if (DEBUG) console.log(`Line intersects rectangle edge`);
                 return true;
             }
         }
@@ -238,19 +238,19 @@ export class BuildingGenerator {
         const bounds = building.getBounds();
         const buffer = this.minSetback;
         
-        console.log(`Checking building placement at (${bounds.minX}, ${bounds.minY}) to (${bounds.maxX}, ${bounds.maxY})`);
-        console.log(`Buffer: ${buffer}`);
+        if (DEBUG) console.log(`Checking building placement at (${bounds.minX}, ${bounds.minY}) to (${bounds.maxX}, ${bounds.maxY})`);
+        if (DEBUG) console.log(`Buffer: ${buffer}`);
         
         // Check against roads - use proper distance calculation
         const roads = this.elementManager.getRoads();
-        console.log(`Number of roads to check: ${roads.length}`);
+        if (DEBUG) console.log(`Number of roads to check: ${roads.length}`);
         
         for (const road of roads) {
             // Quick check: if road is very far away, skip it
             const roadBounds = road.getBounds();
             const maxDistance = 100; // Skip roads more than 100 pixels away
             if (!this.boundsOverlap(bounds, roadBounds, maxDistance)) {
-                console.log(`Skipping road ${road.id} - too far away`);
+                if (DEBUG) console.log(`Skipping road ${road.id} - too far away`);
                 continue;
             }
             
@@ -276,13 +276,13 @@ export class BuildingGenerator {
                 
                 // Check if the road segment intersects the expanded building bounds
                 const intersects = this.lineIntersectsRect(p1, p2, expandedRect);
-                console.log(`Road segment (${p1.x},${p1.y}) to (${p2.x},${p2.y}) intersects expanded bounds: ${intersects}`);
+                if (DEBUG) console.log(`Road segment (${p1.x},${p1.y}) to (${p2.x},${p2.y}) intersects expanded bounds: ${intersects}`);
                 
                 if (intersects) {
                     // Also need to consider road width
                     const roadWidth = road.properties?.width || 20;
                     const roadBuffer = roadWidth / 2 + buffer;
-                    console.log(`Road width: ${roadWidth}, Road buffer: ${roadBuffer}`);
+                    if (DEBUG) console.log(`Road width: ${roadWidth}, Road buffer: ${roadBuffer}`);
                     
                     // Get closest point on line to each corner of the building
                     const corners = [
@@ -299,10 +299,10 @@ export class BuildingGenerator {
                             Math.pow(closestPoint.y - corner.y, 2)
                         );
                         
-                        console.log(`Corner (${corner.x},${corner.y}) distance to road: ${distance}, required: ${roadBuffer}`);
+                        if (DEBUG) console.log(`Corner (${corner.x},${corner.y}) distance to road: ${distance}, required: ${roadBuffer}`);
                         
                         if (distance < roadBuffer) {
-                            console.log(`Building too close to road! Distance ${distance} < ${roadBuffer}`);
+                            if (DEBUG) console.log(`Building too close to road! Distance ${distance} < ${roadBuffer}`);
                             return false;
                         }
                     }
@@ -310,21 +310,21 @@ export class BuildingGenerator {
             }
         }
         
-        console.log('Finished checking roads, no conflicts found');
+        if (DEBUG) console.log('Finished checking roads, no conflicts found');
         
         // Check against intersections
         const intersections = this.elementManager.getIntersections();
-        console.log(`Number of intersections to check: ${intersections.length}`);
+        if (DEBUG) console.log(`Number of intersections to check: ${intersections.length}`);
         for (const intersection of intersections) {
             const intBounds = intersection.getBounds();
             const intersectionBuffer = buffer * 1.5; // 7.5 pixels
-            console.log(`Intersection bounds:`, intBounds);
-            console.log(`Building bounds: [${bounds.minX.toFixed(1)}, ${bounds.minY.toFixed(1)}] to [${bounds.maxX.toFixed(1)}, ${bounds.maxY.toFixed(1)}]`);
-            console.log(`Checking with buffer: ${intersectionBuffer}`);
+            if (DEBUG) console.log(`Intersection bounds:`, intBounds);
+            if (DEBUG) console.log(`Building bounds: [${bounds.minX.toFixed(1)}, ${bounds.minY.toFixed(1)}] to [${bounds.maxX.toFixed(1)}, ${bounds.maxY.toFixed(1)}]`);
+            if (DEBUG) console.log(`Checking with buffer: ${intersectionBuffer}`);
             
             const overlaps = this.boundsOverlap(bounds, intBounds, intersectionBuffer);
             if (overlaps) {
-                console.log(`FAILED: Building overlaps with intersection at (${intersection.x}, ${intersection.y})`);
+                if (DEBUG) console.log(`FAILED: Building overlaps with intersection at (${intersection.x}, ${intersection.y})`);
                 return false;
             }
         }
@@ -335,12 +335,12 @@ export class BuildingGenerator {
             if (existingBuilding.id === building.id) continue;
             const existingBounds = existingBuilding.getBounds();
             if (this.boundsOverlap(bounds, existingBounds, 5)) { // 5px minimum spacing
-                console.log(`Building overlaps with existing building ${existingBuilding.id}`);
+                if (DEBUG) console.log(`Building overlaps with existing building ${existingBuilding.id}`);
                 return false;
             }
         }
         
-        console.log('Building placement check PASSED!');
+        if (DEBUG) console.log('Building placement check PASSED!');
         return true;
     }
 
@@ -395,7 +395,7 @@ export class BuildingGenerator {
         try {
             const detector = new CityBlockDetector(this.elementManager);
             blocks = detector.detectBlocks();
-            console.log(`Detected ${blocks.length} city blocks using graph analysis`);
+            if (DEBUG) console.log(`Detected ${blocks.length} city blocks using graph analysis`);
         } catch (error) {
             console.warn('Advanced block detection failed, falling back to grid method:', error);
             blocks = this.detectCityBlocks();
@@ -415,11 +415,11 @@ export class BuildingGenerator {
                 const building = this.generateBuildingForLot(lot);
                 
                 if (this.checkBuildingPlacement(building)) {
-                    console.log('Adding building:', building.id, 'at', building.x, building.y);
+                    if (DEBUG) console.log('Adding building:', building.id, 'at', building.x, building.y);
                     this.elementManager.addBuilding(building);
                     generatedCount++;
                 } else {
-                    console.log('Building placement failed for:', building.id);
+                    if (DEBUG) console.log('Building placement failed for:', building.id);
                 }
             }
         }
@@ -431,25 +431,25 @@ export class BuildingGenerator {
      * Generate buildings in a specific area
      */
     generateBuildingsInArea(x, y, width, height) {
-        console.log(`generateBuildingsInArea called with: x=${x}, y=${y}, width=${width}, height=${height}`);
+        if (DEBUG) console.log(`generateBuildingsInArea called with: x=${x}, y=${y}, width=${width}, height=${height}`);
         const block = { x, y, width, height, valid: true };
         
         // Remove the road intersection check - let individual building placement handle conflicts
         
         const lots = this.subdivideBlock(block);
-        console.log(`Subdivision created ${lots.length} lots`);
+        if (DEBUG) console.log(`Subdivision created ${lots.length} lots`);
         let generatedCount = 0;
         
         for (const lot of lots) {
             const building = this.generateBuildingForLot(lot);
-            console.log(`Checking placement for building at (${building.x}, ${building.y})`);
+            if (DEBUG) console.log(`Checking placement for building at (${building.x}, ${building.y})`);
             
             if (this.checkBuildingPlacement(building)) {
                 this.elementManager.addBuilding(building);
                 generatedCount++;
-                console.log(`Building placed successfully`);
+                if (DEBUG) console.log(`Building placed successfully`);
             } else {
-                console.log(`Building placement failed`);
+                if (DEBUG) console.log(`Building placement failed`);
             }
         }
         
