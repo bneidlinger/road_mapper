@@ -1,6 +1,7 @@
 import { BaseTool } from './BaseTool.js';
 import { Building } from '../elements/Building.js';
 import { BuildingGenerator } from '../BuildingGenerator.js';
+import { DEBUG } from '../../core/constants.js';
 
 export class BuildingTool extends BaseTool {
     constructor(toolManager) {
@@ -17,7 +18,7 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseDown(event, worldPos) {
-        console.log('BuildingTool.onMouseDown:', {
+        if (DEBUG) console.log('BuildingTool.onMouseDown:', {
             button: event.button,
             worldPos: worldPos,
             isDrawing: this.isDrawing
@@ -29,7 +30,7 @@ export class BuildingTool extends BaseTool {
             this.startPoint = { ...worldPos };
             this.previewRect = null; // Reset preview rect on new draw
             this.hasDrawnPreview = false; // Track if we've actually drawn a preview
-            console.log('BuildingTool: Started drawing at', this.startPoint);
+            if (DEBUG) console.log('BuildingTool: Started drawing at', this.startPoint);
         }
     }
 
@@ -52,7 +53,7 @@ export class BuildingTool extends BaseTool {
             // Only log significant changes
             if (!this.lastLoggedWidth || Math.abs(width - this.lastLoggedWidth) > 10 || 
                 !this.lastLoggedHeight || Math.abs(height - this.lastLoggedHeight) > 10) {
-                console.log('BuildingTool: Preview size:', {
+                if (DEBUG) console.log('BuildingTool: Preview size:', {
                     width: Math.round(width),
                     height: Math.round(height)
                 });
@@ -66,21 +67,21 @@ export class BuildingTool extends BaseTool {
     }
 
     onMouseUp(event, worldPos) {
-        console.log('BuildingTool.onMouseUp - State check:');
-        console.log('  - event.button:', event.button);
-        console.log('  - mouseIsDown:', this.mouseIsDown);
-        console.log('  - isDrawing:', this.isDrawing);
-        console.log('  - hasDrawnPreview:', this.hasDrawnPreview);
-        console.log('  - startPoint:', this.startPoint);
-        console.log('  - previewRect:', this.previewRect);
+        if (DEBUG) console.log('BuildingTool.onMouseUp - State check:');
+        if (DEBUG) console.log('  - event.button:', event.button);
+        if (DEBUG) console.log('  - mouseIsDown:', this.mouseIsDown);
+        if (DEBUG) console.log('  - isDrawing:', this.isDrawing);
+        if (DEBUG) console.log('  - hasDrawnPreview:', this.hasDrawnPreview);
+        if (DEBUG) console.log('  - startPoint:', this.startPoint);
+        if (DEBUG) console.log('  - previewRect:', this.previewRect);
         if (this.previewRect) {
-            console.log('  - preview dimensions:', this.previewRect.width, 'x', this.previewRect.height);
-            console.log('  - size check (>10):', this.previewRect.width > 10 && this.previewRect.height > 10);
+            if (DEBUG) console.log('  - preview dimensions:', this.previewRect.width, 'x', this.previewRect.height);
+            if (DEBUG) console.log('  - size check (>10):', this.previewRect.width > 10 && this.previewRect.height > 10);
         }
         
         // Prevent double processing
         if (!this.mouseIsDown || !this.isDrawing) {
-            console.log('BuildingTool.onMouseUp - Already processed, skipping');
+            if (DEBUG) console.log('BuildingTool.onMouseUp - Already processed, skipping');
             return;
         }
         
@@ -101,30 +102,30 @@ export class BuildingTool extends BaseTool {
                     'commercial'
                 );
                 
-                console.log('Creating single building:', building);
+                if (DEBUG) console.log('Creating single building:', building);
                 this.toolManager.elementManager.addBuilding(building);
-                console.log('Building added to ElementManager');
+                if (DEBUG) console.log('Building added to ElementManager');
                 
                 // Force a render update
                 this.toolManager.emit('redraw');
-                console.log('redraw event emitted');
+                if (DEBUG) console.log('redraw event emitted');
             } else {
                 // Option 2: Generate multiple buildings in the area
-                console.log('Generating buildings in area:', this.previewRect);
+                if (DEBUG) console.log('Generating buildings in area:', this.previewRect);
                 const count = this.generator.generateBuildingsInArea(
                     this.previewRect.x,
                     this.previewRect.y,
                     this.previewRect.width,
                     this.previewRect.height
                 );
-                console.log(`Generated ${count} buildings in selected area`);
+                if (DEBUG) console.log(`Generated ${count} buildings in selected area`);
                 
                 // Force a render update
                 if (count > 0) {
                     this.toolManager.emit('redraw');
-                    console.log('redraw event emitted for multiple buildings');
+                    if (DEBUG) console.log('redraw event emitted for multiple buildings');
                 } else {
-                    console.log('No buildings were generated - check placement constraints');
+                    if (DEBUG) console.log('No buildings were generated - check placement constraints');
                 }
             }
         } else if (this.isDrawing && this.hasDrawnPreview) {
@@ -201,7 +202,7 @@ export class BuildingTool extends BaseTool {
         this.hasDrawnPreview = false;
         // Add global mouse up listener to catch events that might be missed
         window.addEventListener('mouseup', this.handleWindowMouseUp);
-        console.log('BuildingTool activated - state reset');
+        if (DEBUG) console.log('BuildingTool activated - state reset');
     }
     
     deactivate() {
@@ -214,10 +215,10 @@ export class BuildingTool extends BaseTool {
     }
     
     handleWindowMouseUp(event) {
-        console.log('Window mouseup detected in BuildingTool - isDrawing:', this.isDrawing, 'mouseIsDown:', this.mouseIsDown);
+        if (DEBUG) console.log('Window mouseup detected in BuildingTool - isDrawing:', this.isDrawing, 'mouseIsDown:', this.mouseIsDown);
         // Only handle if we haven't already processed this mouse up
         if (this.isDrawing && this.mouseIsDown && event.button === 0) {
-            console.log('Processing window mouseup as backup');
+            if (DEBUG) console.log('Processing window mouseup as backup');
             // Convert to world position
             const worldPos = this.toolManager.getWorldPosition(event);
             this.onMouseUp(event, worldPos);

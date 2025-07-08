@@ -9,7 +9,7 @@ import { IntersectionPropertiesPanel } from './components/intersection/Intersect
 import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
 import { RoadPropertiesPanel } from './components/RoadPropertiesPanel.js';
 import { Store } from './core/Store.js';
-import { TOOLS } from './core/constants.js';
+import { TOOLS, DEBUG } from './core/constants.js';
 import { Grid } from './modules/grid/Grid.js';
 
 class RoadMapperApp {
@@ -152,7 +152,7 @@ class RoadMapperApp {
     // Isometric 3D toggle
     document.getElementById('toggle-isometric')?.addEventListener('click', () => {
       const isIsometric = this.svgRenderer.toggleIsometric();
-      console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
+      if (DEBUG) console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
       
       // Update button state
       const button = document.getElementById('toggle-isometric');
@@ -170,27 +170,27 @@ class RoadMapperApp {
 
     // Handle element selection events
     this.toolManager.on('elementSelected', (element) => {
-      console.log('app.js: elementSelected event received:', element);
+      if (DEBUG) console.log('app.js: elementSelected event received:', element);
       if (element.width !== undefined && element.height !== undefined) {
         // It's a building
-        console.log('app.js: Detected building selection');
+        if (DEBUG) console.log('app.js: Detected building selection');
         this.buildingPropertiesPanel.show(element);
         this.intersectionPropertiesPanel.hide();
       } else if (element.connectedRoads !== undefined) {
         // It's an intersection
-        console.log('app.js: Detected intersection selection');
-        console.log('Calling intersectionPropertiesPanel.showForIntersection with:', element);
+        if (DEBUG) console.log('app.js: Detected intersection selection');
+        if (DEBUG) console.log('Calling intersectionPropertiesPanel.showForIntersection with:', element);
         this.intersectionPropertiesPanel.showForIntersection(element);
         this.buildingPropertiesPanel.hide();
       } else if (element.points !== undefined) {
         // It's a road
-        console.log('app.js: Detected road selection');
+        if (DEBUG) console.log('app.js: Detected road selection');
         this.roadPropertiesPanel.show(element);
         this.buildingPropertiesPanel.hide();
         this.intersectionPropertiesPanel.hide();
       } else {
         // It's something else
-        console.log('app.js: Detected other element selection');
+        if (DEBUG) console.log('app.js: Detected other element selection');
         this.roadPropertiesPanel.hide();
         this.buildingPropertiesPanel.hide();
         this.intersectionPropertiesPanel.hide();
@@ -290,7 +290,7 @@ class RoadMapperApp {
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
               e.preventDefault();
               const isIsometric = this.svgRenderer.toggleIsometric();
-              console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
+              if (DEBUG) console.log('Isometric view:', isIsometric ? 'enabled' : 'disabled');
               
               // Update button state
               const button = document.getElementById('toggle-isometric');

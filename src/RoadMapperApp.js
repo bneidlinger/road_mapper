@@ -6,7 +6,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { IntersectionPropertiesPanel } from './components/intersection/IntersectionPropertiesPanel.js';
 import { BuildingPropertiesPanel } from './components/BuildingPropertiesPanel.js';
 import { Store } from './core/Store.js';
-import { TOOLS } from './core/constants.js';
+import { TOOLS, DEBUG } from './core/constants.js';
 import { Grid } from './modules/grid/Grid.js';
 
 export class RoadMapperApp {
@@ -82,20 +82,20 @@ export class RoadMapperApp {
       
       // Handle element selection events
       this.toolManager.on('elementSelected', (element) => {
-        console.log('RoadMapperApp: elementSelected event received:', element);
+        if (DEBUG) console.log('RoadMapperApp: elementSelected event received:', element);
         if (element.width !== undefined && element.height !== undefined) {
           // It's a building
-          console.log('RoadMapperApp: Detected building selection');
+          if (DEBUG) console.log('RoadMapperApp: Detected building selection');
           this.buildingPropertiesPanel.show(element);
           this.intersectionPropertiesPanel.hide();
         } else if (element.connectedRoads !== undefined) {
           // It's an intersection
-          console.log('RoadMapperApp: Detected intersection selection');
+          if (DEBUG) console.log('RoadMapperApp: Detected intersection selection');
           this.intersectionPropertiesPanel.show(element);
           this.buildingPropertiesPanel.hide();
         } else {
           // It's a road or something else
-          console.log('RoadMapperApp: Detected other element selection');
+          if (DEBUG) console.log('RoadMapperApp: Detected other element selection');
           this.buildingPropertiesPanel.hide();
           this.intersectionPropertiesPanel.hide();
         }
