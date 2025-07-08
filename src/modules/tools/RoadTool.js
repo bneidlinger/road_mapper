@@ -47,7 +47,7 @@ export class RoadTool extends BaseTool {
   }
 
   onMouseDown(event, worldPos) {
-    const snappedPos = this.grid.snap(worldPos.x, worldPos.y);
+    const snappedPos = this.grid.snap(worldPos.x, worldPos.y, this.grid.smallGrid);
     
     if (!this.isDrawing) {
       this.startRoad(snappedPos.x, snappedPos.y);
@@ -58,7 +58,7 @@ export class RoadTool extends BaseTool {
 
   onMouseMove(event, worldPos) {
     if (this.isDrawing) {
-      this.previewPoint = this.grid.snap(worldPos.x, worldPos.y);
+      this.previewPoint = this.grid.snap(worldPos.x, worldPos.y, this.grid.smallGrid);
       
       // Check for potential T-intersection
       // For segment drawing, we need to pass the start point of the current segment
