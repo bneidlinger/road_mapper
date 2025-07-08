@@ -175,21 +175,25 @@ export class Building {
     }
 
     updateProperties(changes) {
-        // Update basic properties
-        if (changes.type !== undefined) this.type = changes.type;
+        const typeChanged = changes.type !== undefined && changes.type !== this.type;
+
+        if (changes.type !== undefined) {
+            this.type = changes.type;
+            this.color = this.getColorForType();
+
+            if (typeChanged) {
+                this.properties = this.generateDefaultProperties();
+                this.footprint = this.generateFootprint();
+            }
+        }
+
         if (changes.floors !== undefined) this.floors = changes.floors;
         if (changes.roofType !== undefined) this.roofType = changes.roofType;
         if (changes.rotation !== undefined) this.rotation = changes.rotation;
         if (changes.customColor !== undefined) this.customColor = changes.customColor;
-        
-        // Update type-specific properties
+
         if (changes.properties) {
             this.properties = { ...this.properties, ...changes.properties };
-        }
-        
-        // Regenerate color if type changed and no custom color
-        if (changes.type !== undefined && !this.customColor) {
-            this.color = this.getColorForType();
         }
     }
 
@@ -324,38 +328,6 @@ export class Building {
         // But this method is required for the visibility system
     }
 
-    updateProperties(changes) {
-        if (changes.type && changes.type !== this.type) {
-            this.type = changes.type;
-            this.color = this.getColorForType();
-            this.properties = this.generateDefaultProperties();
-        }
-        
-        if (changes.floors !== undefined) {
-            this.floors = changes.floors;
-        }
-        
-        if (changes.roofType !== undefined) {
-            this.roofType = changes.roofType;
-        }
-        
-        if (changes.rotation !== undefined) {
-            this.rotation = changes.rotation;
-        }
-        
-        if (changes.customColor !== undefined) {
-            this.customColor = changes.customColor;
-        }
-        
-        if (changes.properties) {
-            this.properties = { ...this.properties, ...changes.properties };
-        }
-        
-        // Regenerate footprint if needed
-        if (changes.type) {
-            this.footprint = this.generateFootprint();
-        }
-    }
 
     toJSON() {
         return {
