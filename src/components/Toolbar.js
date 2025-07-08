@@ -36,6 +36,11 @@ export class Toolbar {
             <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
           </svg>
         </button>
+        <button data-tool="${TOOLS.ZONE}" class="tool-button" data-tooltip="Zone Tool (Z)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16"/>
+          </svg>
+        </button>
         <button data-tool="${TOOLS.DELETE}" class="tool-button" data-tooltip="Delete Tool (D)">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18"/>
@@ -114,6 +119,9 @@ export class Toolbar {
           break;
         case 'i':
           this.selectTool(TOOLS.INTERSECTION);
+          break;
+        case 'z':
+          this.selectTool(TOOLS.ZONE);
           break;
         case 'd':
           this.selectTool(TOOLS.DELETE);

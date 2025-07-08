@@ -7,6 +7,7 @@ export const TOOLS = {
   SELECT: 'select',
   ROAD: 'road',
   INTERSECTION: 'intersection',
+  ZONE: 'zone',
   DELETE: 'delete',
   PAN: 'pan',
   BUILDING: 'building'
