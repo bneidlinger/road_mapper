@@ -3,18 +3,21 @@ import { GRID_SIZES, PIXELS_PER_METER } from '../../core/constants.js';
 export class Grid {
   constructor(gridSize = GRID_SIZES.MEDIUM) {
     this.gridSize = gridSize;
+    this.smallGrid = GRID_SIZES.FINE;
     this.snapEnabled = true;
     this.visible = true;
   }
 
-  snap(x, y) {
+  snap(x, y, interval = this.gridSize) {
     if (!this.snapEnabled) {
       return { x, y };
     }
-    
+
+    const size = interval || this.gridSize;
+
     return {
-      x: Math.round(x / this.gridSize) * this.gridSize,
-      y: Math.round(y / this.gridSize) * this.gridSize
+      x: Math.round(x / size) * size,
+      y: Math.round(y / size) * size
     };
   }
 

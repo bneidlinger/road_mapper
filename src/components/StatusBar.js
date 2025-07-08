@@ -2,9 +2,10 @@ import { PIXELS_PER_METER, ZOOM_LEVELS } from '../core/constants.js';
 import { RoadRenderer } from '../modules/rendering/RoadRenderer.js';
 
 export class StatusBar {
-  constructor(viewport, toolManager) {
+  constructor(viewport, toolManager, grid = null) {
     this.viewport = viewport;
     this.toolManager = toolManager;
+    this.grid = grid;
     this.container = null;
     this.elements = {};
   }
@@ -62,8 +63,12 @@ export class StatusBar {
 
   bindEvents() {
     this.toolManager.on('cursorMove', (worldPos) => {
-      const x = Math.round(worldPos.x / PIXELS_PER_METER);
-      const y = Math.round(worldPos.y / PIXELS_PER_METER);
+      let snapped = worldPos;
+      if (this.grid) {
+        snapped = this.grid.snap(worldPos.x, worldPos.y, this.grid.smallGrid);
+      }
+      const x = Math.round(snapped.x / PIXELS_PER_METER);
+      const y = Math.round(snapped.y / PIXELS_PER_METER);
       this.elements.cursorPosition.textContent = `${x}m, ${y}m`;
     });
     

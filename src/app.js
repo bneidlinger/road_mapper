@@ -66,7 +66,7 @@ class RoadMapperApp {
       this.toolbar = new Toolbar('toolbar-container', this.toolManager);
       // Toolbar mounted
 
-      this.statusBar = new StatusBar(this.viewport, this.toolManager);
+      this.statusBar = new StatusBar(this.viewport, this.toolManager, this.grid);
       this.statusBar.mount('status-bar-container');
       // StatusBar mounted
 

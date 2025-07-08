@@ -59,7 +59,8 @@ export class RoadMapperApp {
       
       // Initialize UI components
       this.toolbar = new Toolbar('toolbar-container', this.toolManager);
-      this.statusBar = new StatusBar('status-bar-container', this.viewport, this.grid);
+      this.statusBar = new StatusBar(this.viewport, this.toolManager, this.grid);
+      this.statusBar.mount('status-bar-container');
       
       // Initialize properties panels
       this.intersectionPropertiesPanel = new IntersectionPropertiesPanel(this.elementManager);
