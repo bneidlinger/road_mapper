@@ -17,47 +17,17 @@ export class BuildingGenerator {
      * Detect city blocks (areas bounded by roads)
      */
     detectCityBlocks() {
-        const roads = this.elementManager.getRoads();
-        const blocks = [];
-        
-        console.log('Detecting city blocks...');
-        console.log('Number of roads:', roads.length);
-        
-        // For now, we'll use a simple grid-based approach
-        // In a full implementation, this would use polygon intersection
-        // and computational geometry to find actual enclosed areas
-        
-        const bounds = this.elementManager.getBounds();
-        console.log('Bounds:', bounds);
-        
-        const blockSize = 200; // Size of each potential block
-        
-        for (let x = bounds.x; x < bounds.x + bounds.width; x += blockSize) {
-            for (let y = bounds.y; y < bounds.y + bounds.height; y += blockSize) {
-                const block = {
-                    x: x,
-                    y: y,
-                    width: blockSize,
-                    height: blockSize,
-                    valid: true
-                };
-                
-                // Check if block intersects with any roads
-                for (const road of roads) {
-                    if (this.blockIntersectsRoad(block, road)) {
-                        block.valid = false;
-                        break;
-                    }
-                }
-                
-                if (block.valid) {
-                    blocks.push(block);
-                }
-            }
+        // Use polygon-based detection via CityBlockDetector
+        const detector = new CityBlockDetector(this.elementManager);
+
+        try {
+            const blocks = detector.detectBlocks();
+            console.log(`Detected ${blocks.length} polygon blocks`);
+            return blocks;
+        } catch (error) {
+            console.warn('Polygon block detection failed:', error);
+            return [];
         }
-        
-        console.log('Detected blocks:', blocks.length);
-        return blocks;
     }
 
     /**
@@ -212,15 +182,85 @@ export class BuildingGenerator {
      * Subdivide a polygon block (from city block detection)
      */
     subdividePolygonBlock(block) {
-        // For now, use bounding box subdivision
-        // TODO: Implement proper polygon subdivision
+        const lots = [];
+        const minLotSize = 20;
+        const maxLotSize = 60;
+
         const bounds = block.bounds;
-        return this.subdivideRectangularBlock({
-            x: bounds.x,
-            y: bounds.y,
-            width: bounds.width,
-            height: bounds.height
-        });
+        this.recursiveSubdividePolygon(
+            bounds.x + this.blockPadding,
+            bounds.y + this.blockPadding,
+            bounds.width - 2 * this.blockPadding,
+            bounds.height - 2 * this.blockPadding,
+            block.points,
+            lots,
+            minLotSize,
+            maxLotSize
+        );
+
+        return lots;
+    }
+
+    /**
+     * Recursive subdivision for polygon blocks
+     */
+    recursiveSubdividePolygon(x, y, width, height, polygon, lots, minSize, maxSize) {
+        const corners = [
+            { x, y },
+            { x: x + width, y },
+            { x: x + width, y: y + height },
+            { x, y: y + height }
+        ];
+
+        const allInside = corners.every(c => this.pointInPolygon(c, polygon));
+        const anyInside = corners.some(c => this.pointInPolygon(c, polygon));
+
+        if (!anyInside) {
+            return; // Completely outside polygon
+        }
+
+        if (width < maxSize * 1.5 && height < maxSize * 1.5 && allInside) {
+            if (width >= minSize && height >= minSize) {
+                lots.push({ x, y, width, height });
+            }
+            return;
+        }
+
+        const splitHorizontal = width > height;
+
+        if (splitHorizontal) {
+            const splitRatio = 0.4 + Math.random() * 0.2;
+            const splitX = x + width * splitRatio;
+
+            this.recursiveSubdividePolygon(x, y, splitX - x - 2, height, polygon, lots, minSize, maxSize);
+            this.recursiveSubdividePolygon(splitX + 2, y, x + width - splitX - 2, height, polygon, lots, minSize, maxSize);
+        } else {
+            const splitRatio = 0.4 + Math.random() * 0.2;
+            const splitY = y + height * splitRatio;
+
+            this.recursiveSubdividePolygon(x, y, width, splitY - y - 2, polygon, lots, minSize, maxSize);
+            this.recursiveSubdividePolygon(x, splitY + 2, width, y + height - splitY - 2, polygon, lots, minSize, maxSize);
+        }
+    }
+
+    /**
+     * Point-in-polygon test
+     */
+    pointInPolygon(point, polygon) {
+        let inside = false;
+        const n = polygon.length;
+
+        for (let i = 0, j = n - 1; i < n; j = i++) {
+            const xi = polygon[i].x, yi = polygon[i].y;
+            const xj = polygon[j].x, yj = polygon[j].y;
+
+            const intersect = ((yi > point.y) !== (yj > point.y)) &&
+                (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
     }
 
     /**
